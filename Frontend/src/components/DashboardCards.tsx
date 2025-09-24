@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { 
   CloudRain, 
   Thermometer, 
@@ -16,12 +16,11 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useI18n } from '@/contexts/I18nContext';
-import html2pdf from 'html2pdf.js';
 
 interface DashboardCardsProps {
   forecastData: any;
   scenario: string;
-  weeklyForecast: Array<{
+  weeklyForecast?: Array<{
     day: string;
     temp: number;
     rain: number;
@@ -29,15 +28,14 @@ interface DashboardCardsProps {
   }>;
 }
 
-const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
-  const { t } = useI18n();
-=======
 const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCardsProps) => {
+  const { t } = useI18n();
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPDF = async () => {
     const input = dashboardRef.current;
     if (input) {
+      const { default: html2pdf } = await import('html2pdf.js');
       html2pdf().from(input).save(`HarvestIQ_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     }
   };
@@ -73,6 +71,8 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCar
     if (risk < 70) return 'Moderate Risk';
     return 'High Risk';
   };
+
+  const weekly = weeklyForecast || forecastData.weeklyForecast || [];
 
   return (
     <div className="flex flex-col gap-6" ref={dashboardRef}>
@@ -146,7 +146,7 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCar
           <div>
             <h4 className="text-sm font-medium mb-3">{t('next_7_days')}</h4>
             <div className="grid grid-cols-7 gap-1">
-              {weeklyForecast.map((day: any, index: number) => (
+              {weekly.map((day: any, index: number) => (
                 <div key={index} className="text-center p-1">
                   <div className="text-xs text-muted-foreground">{day.day}</div>
                   {day.conditionIcon && (
