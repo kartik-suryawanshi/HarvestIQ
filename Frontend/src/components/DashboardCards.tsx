@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import React, { useRef } from 'react';
 import { 
   CloudRain, 
   Thermometer, 
@@ -14,13 +15,29 @@ import {
   BarChart3
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import html2pdf from 'html2pdf.js';
 
 interface DashboardCardsProps {
   forecastData: any;
   scenario: string;
+  weeklyForecast: Array<{
+    day: string;
+    temp: number;
+    rain: number;
+    conditionIcon?: string;
+  }>;
 }
 
-const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
+const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCardsProps) => {
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPDF = async () => {
+    const input = dashboardRef.current;
+    if (input) {
+      html2pdf().from(input).save(`HarvestIQ_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+  };
+
   if (!forecastData) {
     return (
       <div className="flex flex-col gap-6">
@@ -54,7 +71,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6" ref={dashboardRef}>
       {/* Weather & Risk Assessment Card */}
       <Card>
         <CardHeader>
@@ -125,11 +142,18 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           <div>
             <h4 className="text-sm font-medium mb-3">Next 7 Days</h4>
             <div className="grid grid-cols-7 gap-1">
-              {forecastData.weeklyForecast.map((day: any, index: number) => (
+              {weeklyForecast.map((day: any, index: number) => (
                 <div key={index} className="text-center p-1">
                   <div className="text-xs text-muted-foreground">{day.day}</div>
-                  <CloudRain className="h-4 w-4 mx-auto my-1 text-water" />
-                  <div className="text-xs font-medium">{day.temp}°</div>
+                  {day.conditionIcon && (
+                    <img 
+                      src={`https:${day.conditionIcon}`}
+                      alt={day.conditionText || 'Weather icon'}
+                      className="h-6 w-6 mx-auto my-1"
+                    />
+                  )}
+                  {!day.conditionIcon && <CloudRain className="h-4 w-4 mx-auto my-1 text-water" />}
+                  <div className="text-xs font-medium">{day.temp}°C</div>
                   <div className="text-xs text-water">{day.rain}mm</div>
                 </div>
               ))}
@@ -246,7 +270,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           </div>
 
           {/* Download Button */}
-          <Button className="w-full" variant="outline">
+          <Button className="w-full" variant="outline" onClick={handleDownloadPDF}>
             <Download className="h-4 w-4 mr-2" />
             Download Schedule PDF
           </Button>
