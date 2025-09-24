@@ -24,6 +24,11 @@ const Dashboard = () => {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Soil state (user-provided)
+  const [soilType, setSoilType] = useState('');
+  const [soilPh, setSoilPh] = useState('');
+  const [soilOrganicMatter, setSoilOrganicMatter] = useState('');
+  const [soilDrainage, setSoilDrainage] = useState<'' | 'poor' | 'moderate' | 'good'>('');
 
   const handleScenarioChange = (newScenario: string) => {
     setScenario(newScenario);
@@ -151,6 +156,14 @@ const Dashboard = () => {
               onCropChange={setSelectedCrop}
               onSeasonChange={setSelectedSeason}
               onGenerateForecast={handleGenerateForecast}
+              soilType={soilType}
+              soilPh={soilPh}
+              soilOrganicMatter={soilOrganicMatter}
+              soilDrainage={soilDrainage}
+              onSoilTypeChange={setSoilType}
+              onSoilPhChange={setSoilPh}
+              onSoilOrganicMatterChange={setSoilOrganicMatter}
+              onSoilDrainageChange={(v) => setSoilDrainage(v)}
             />
           </div>
 
@@ -196,7 +209,7 @@ const Dashboard = () => {
               <PredictionHistory />
             ) : (
               <DashboardCards 
-                forecastData={forecastData} 
+                forecastData={forecastData}
                 scenario={scenario}
               />
             )}
@@ -211,7 +224,19 @@ const Dashboard = () => {
               </p>
             </div>
             
-            <InsightsPanel hasData={!!forecastData} />
+            <InsightsPanel
+              hasData={!!forecastData}
+              soilProfile={
+                soilType && soilDrainage && soilPh
+                  ? {
+                      type: soilType,
+                      ph: parseFloat(soilPh) || (forecastData?.soilProfile?.ph ?? 6.5),
+                      organicMatterPct: parseFloat(soilOrganicMatter) || (forecastData?.soilProfile?.organicMatterPct ?? 1.5),
+                      drainage: soilDrainage,
+                    }
+                  : forecastData?.soilProfile
+              }
+            />
           </div>
         </div>
       </main>

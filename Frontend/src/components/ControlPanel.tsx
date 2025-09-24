@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,15 @@ interface ControlPanelProps {
   onCropChange: (crop: string) => void;
   onSeasonChange: (season: string) => void;
   onGenerateForecast: () => void;
+  // Soil parameters
+  soilType: string;
+  soilPh: string; // keep as string for input control; parse where needed
+  soilOrganicMatter: string; // percentage as string
+  soilDrainage: 'poor' | 'moderate' | 'good' | '';
+  onSoilTypeChange: (type: string) => void;
+  onSoilPhChange: (ph: string) => void;
+  onSoilOrganicMatterChange: (om: string) => void;
+  onSoilDrainageChange: (d: 'poor' | 'moderate' | 'good') => void;
 }
 
 const crops = [
@@ -38,7 +48,15 @@ const ControlPanel = ({
   onDistrictChange,
   onCropChange,
   onSeasonChange,
-  onGenerateForecast
+  onGenerateForecast,
+  soilType,
+  soilPh,
+  soilOrganicMatter,
+  soilDrainage,
+  onSoilTypeChange,
+  onSoilPhChange,
+  onSoilOrganicMatterChange,
+  onSoilDrainageChange
 }: ControlPanelProps) => {
   const { t } = useI18n();
   return (
@@ -115,6 +133,47 @@ const ControlPanel = ({
               ))}
             </SelectContent>
           </Select>
+        </CardContent>
+      </Card>
+
+      {/* Soil Parameters */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span>Soil Parameters</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">Soil Type</div>
+              <Input placeholder="e.g., Loam, Clay Loam" value={soilType} onChange={(e) => onSoilTypeChange(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">pH</div>
+                <Input inputMode="decimal" placeholder="6.5" value={soilPh} onChange={(e) => onSoilPhChange(e.target.value)} />
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Organic Matter (%)</div>
+                <Input inputMode="decimal" placeholder="2.0" value={soilOrganicMatter} onChange={(e) => onSoilOrganicMatterChange(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">Drainage</div>
+              <Select value={soilDrainage} onValueChange={(v) => onSoilDrainageChange(v as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select drainage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="poor">Poor</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="good">Good</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
