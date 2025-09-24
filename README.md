@@ -1,5 +1,4 @@
 # HarvestIQ
-# HarvestIQ
 
 HarvestIQ is an AI-powered, farmer‑friendly decision support system that provides crop yield predictions, real‑time weather risk assessments, and actionable irrigation schedules using ML + rule‑based logic (with optional LLM enhancements). The UI is designed to be simple and practical for field use.
 
