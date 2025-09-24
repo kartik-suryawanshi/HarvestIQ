@@ -14,6 +14,16 @@ import { useI18n } from '@/contexts/I18nContext';
 
 const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
+const SENTINEL_HUB_API_KEY = import.meta.env.VITE_SENTINEL_HUB_API_KEY; // New Sentinel Hub API Key
+const SENTINEL_HUB_INSTANCE_ID = 'YOUR_SENTINEL_HUB_INSTANCE_ID'; // Replace with your Sentinel Hub Instance ID
+
+const districtCoordinates: Record<string, { lat: number; lng: number }> = {
+  'Maharashtra': { lat: 19.7515, lng: 75.7139 },
+  'Karnataka': { lat: 15.3173, lng: 75.7139 },
+  'Uttar Pradesh': { lat: 26.8467, lng: 80.9462 },
+  'Punjab': { lat: 31.1471, lng: 75.3412 },
+  // Add more districts and their coordinates as needed
+};
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -30,6 +40,11 @@ const Dashboard = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]); // New state for 7-day forecast
+  // New soil parameters state
+  const [selectedSoilType, setSelectedSoilType] = useState('');
+  const [soilPH, setSoilPH] = useState('');
+  const [organicMatter, setOrganicMatter] = useState('');
+  const [drainage, setDrainage] = useState('');
 
   // Fetch 7-day forecast when selectedDistrict changes
   useEffect(() => {
@@ -94,10 +109,10 @@ const Dashboard = () => {
   };
 
   const handleGenerateForecast = async () => {
-    if (!selectedDistrict || !selectedCrop || !selectedSeason) {
+    if (!selectedDistrict || !selectedCrop || !selectedSeason || !selectedSoilType || !soilPH || !organicMatter || !drainage) {
       toast({
-        title: "Missing Information",
-        description: "Please select district, crop, and season before generating forecast",
+        title: t("missing_information_title"),
+        description: t("missing_information_description"),
         variant: "destructive",
         duration: 4000,
       });
@@ -109,26 +124,35 @@ const Dashboard = () => {
     try {
       // Show loading progress toast
       const progressToast = toast({
-        title: "Generating Forecast",
-        description: "Analyzing satellite data → Computing crop model → Optimizing irrigation",
+        title: t("generating_forecast_title"),
+        description: t("generating_forecast_description"),
         duration: 8000,
       });
 
-      const data = await mockApiCall(selectedDistrict, selectedCrop, selectedSeason, scenario);
+      const data = await mockApiCall(
+        selectedDistrict,
+        selectedCrop,
+        selectedSeason,
+        scenario,
+        selectedSoilType, // Pass new parameters
+        soilPH,
+        organicMatter,
+        drainage
+      );
       
       setForecastData(data);
       
       // Success toast
       toast({
-        title: "Forecast Generated Successfully",
-        description: `Yield prediction ready for ${selectedCrop} in ${selectedDistrict}`,
+        title: t("forecast_generated_success_title"),
+        description: t("forecast_generated_success_description", { selectedCrop, selectedDistrict }),
         duration: 4000,
       });
 
     } catch (error) {
       toast({
-        title: "Forecast Generation Failed",
-        description: "Unable to generate forecast. Please try again.",
+        title: t("forecast_generation_failed_title"),
+        description: t("forecast_generation_failed_description"),
         variant: "destructive",
         duration: 4000,
       });
@@ -157,6 +181,11 @@ const Dashboard = () => {
           weatherTrend: forecastData.weatherTrend,
           weeklyForecast: forecastData.weeklyForecast
         },
+        // New soil parameters
+        soil_type: selectedSoilType,
+        soil_ph: parseFloat(soilPH),
+        organic_matter: parseFloat(organicMatter),
+        drainage: drainage,
       } as const;
 
       const { error } = await supabase
@@ -202,6 +231,15 @@ const Dashboard = () => {
               onCropChange={setSelectedCrop}
               onSeasonChange={setSelectedSeason}
               onGenerateForecast={handleGenerateForecast}
+              // New soil parameters
+              selectedSoilType={selectedSoilType}
+              onSoilTypeChange={setSelectedSoilType}
+              soilPH={soilPH}
+              onSoilPHChange={setSoilPH}
+              organicMatter={organicMatter}
+              onOrganicMatterChange={setOrganicMatter}
+              drainage={drainage}
+              onDrainageChange={setDrainage}
             />
           </div>
     
@@ -263,7 +301,12 @@ const Dashboard = () => {
               </p>
             </div>
             
-            <InsightsPanel hasData={!!forecastData} />
+            <InsightsPanel 
+              hasData={!!forecastData} 
+              selectedDistrict={selectedDistrict}
+              selectedSeason={selectedSeason}
+              districtCoordinates={districtCoordinates}
+            />
           </div>
         </div>
       </main>
