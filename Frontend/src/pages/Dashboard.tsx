@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
 
-const WEATHER_API_KEY = '903fb6f8bda543aebc491957252409'; // Replace with your actual WeatherAPI.com key
+const WEATHER_API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
 
 const Dashboard = () => {
