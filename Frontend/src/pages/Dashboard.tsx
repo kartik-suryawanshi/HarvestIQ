@@ -12,7 +12,6 @@ import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { predictCrop, getIrrigationSchedule } from '@/lib/mlClient';
-
 // Weather config is read from environment via Vite.
 
 const Dashboard = () => {
@@ -142,21 +141,16 @@ const Dashboard = () => {
 
   const handleScenarioChange = (newScenario: string) => {
     setScenario(newScenario);
-    
-    // Show toast notification
     const scenarioLabels = {
       normal: 'Normal Season',
       drought: 'Drought Alert',
       wet: 'Wet Season'
     };
-    
     toast({
       title: "Scenario Updated",
       description: `Switched to ${scenarioLabels[newScenario as keyof typeof scenarioLabels]} simulation`,
       duration: 3000,
     });
-
-    // If we have existing data, regenerate with new scenario
     if (forecastData && selectedDistrict && selectedCrop && selectedSeason) {
       handleGenerateForecast();
     }
@@ -383,7 +377,6 @@ const Dashboard = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-background">
       <Header scenario={scenario} onScenarioChange={handleScenarioChange} />
@@ -413,7 +406,7 @@ const Dashboard = () => {
               onSowingDateChange={setSowingDate}
             />
           </div>
-    
+      
           {/* Main Dashboard - Cards */}
           <div className="lg:col-span-6">
             <div className="mb-6 flex items-center justify-between">
@@ -462,7 +455,7 @@ const Dashboard = () => {
               <DashboardCards 
                 forecastData={forecastData}
                 scenario={scenario}
-                weeklyForecast={weeklyForecastData} // Pass weekly forecast data
+                weeklyForecast={weeklyForecastData}
                 sowingDate={sowingDate}
               />
             )}

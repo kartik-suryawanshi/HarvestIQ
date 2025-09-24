@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Database,
   Wifi,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '@/contexts/I18nContext';
@@ -22,9 +23,18 @@ interface InsightsPanelProps {
   suggestionRationale?: string | null;
 }
 
+// Removed SENTINEL_HUB_API_KEY and SENTINEL_HUB_INSTANCE_ID
+
 const InsightsPanel = ({ hasData }: InsightsPanelProps) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { t } = useI18n();
+
+  // Removed ndviImageUrl, isSatelliteLoading, satelliteError states
+  const ndviIndex = '0.68'; // Static value
+  const coverage = '94%'; // Static value
+
+  // Removed useEffect hook for fetching satellite image
+  // Removed fetchSatelliteImage function
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -57,23 +67,19 @@ const InsightsPanel = ({ hasData }: InsightsPanelProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Satellite className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <div className="text-sm font-medium">{t('ndvi_image')}</div>
-              <div className="text-xs text-muted-foreground">{t('last_updated')}: 2 days ago</div>
-            </div>
+            <img src="https://ongeo-intelligence.com/uploads/ndmi_25e3523460.png" alt={t('ndvi_image')} className="w-full h-full object-cover rounded-lg" />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="text-sm text-muted-foreground">{t('ndvi_index')}</div>
-              <div className="text-2xl font-bold text-success">0.68</div>
-              <Badge variant="outline" className="text-xs">{t('healthy')}</Badge>
+              <div className="text-2xl font-bold text-success">{ndviIndex}</div>
+              <Badge variant="outline" className="text-xs">{parseFloat(ndviIndex) > 0.5 ? t('healthy') : t('moderate')}</Badge>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">{t('coverage')}</div>
-              <div className="text-2xl font-bold text-primary">94%</div>
-              <Badge variant="outline" className="text-xs">{t('excellent')}</Badge>
+              <div className="text-2xl font-bold text-primary">{coverage}</div>
+              <Badge variant="outline" className="text-xs">{parseInt(coverage) > 90 ? t('excellent') : t('good')}</Badge>
             </div>
           </div>
         </CardContent>

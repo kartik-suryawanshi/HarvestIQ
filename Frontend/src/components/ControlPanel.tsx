@@ -3,12 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Calendar, Wheat, Loader2, Maximize2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { MapPin, Calendar, Wheat, Loader2, Maximize2, Sprout } from 'lucide-react';
 import IndiaMap from './IndiaMap';
 import { useI18n } from '@/contexts/I18nContext';
 import MapPickerDialog from '@/components/MapPickerDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 
 interface ControlPanelProps {
   selectedDistrict: string;
@@ -45,6 +45,19 @@ const crops = [
 const seasons = [
   { value: 'kharif-2024', label: 'Kharif 2024 (Jun-Nov)', months: 'June - November 2024' },
   { value: 'rabi-2024', label: 'Rabi 2024-25 (Nov-Apr)', months: 'November 2024 - April 2025' }
+];
+
+const soilTypes = [
+  { value: 'loamy', label: 'Loamy' },
+  { value: 'sandy', label: 'Sandy' },
+  { value: 'clay', label: 'Clay' },
+  { value: 'silt', label: 'Silt' },
+];
+
+const drainageOptions = [
+  { value: 'good', label: 'Well drained' },
+  { value: 'moderate', label: 'Moderately drained' },
+  { value: 'poor', label: 'Poorly drained' },
 ];
 
 const ControlPanel = ({
@@ -190,9 +203,66 @@ const ControlPanel = ({
         </CardContent>
       </Card>
 
+      {/* Soil Parameters Card */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Sprout className="h-5 w-5 text-primary" />
+            <span>{t('soil_parameters')}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select value={soilType || ''} onValueChange={(v) => onSoilTypeChange?.(v)}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('select_soil_type')} />
+            </SelectTrigger>
+            <SelectContent>
+              {soilTypes.map((soil) => (
+                <SelectItem key={soil.value} value={soil.value}>
+                  {soil.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input 
+            type="number" 
+            placeholder={t('ph_level')} 
+            value={soilPh || ''}
+            onChange={(e) => onSoilPhChange?.(e.target.value)}
+            step="0.1"
+            min="0"
+            max="14"
+          />
+
+          <Input 
+            type="number" 
+            placeholder={t('organic_matter')} 
+            value={soilOrganicMatter || ''}
+            onChange={(e) => onSoilOrganicMatterChange?.(e.target.value)}
+            step="0.1"
+            min="0"
+            max="100"
+          />
+
+          <Select value={soilDrainage || ''} onValueChange={(v) => onSoilDrainageChange?.(v as any)}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('select_drainage')} />
+            </SelectTrigger>
+            <SelectContent>
+              {drainageOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
       <Button 
         onClick={onGenerateForecast}
-        disabled={!selectedDistrict || !selectedCrop || !selectedSeason || isLoading}
+        disabled={!selectedDistrict || !selectedCrop || !selectedSeason || !sowingDate || isLoading}
         className="w-full h-12 text-base font-medium bg-primary hover:bg-primary-dark"
         size="lg"
       >
