@@ -18,6 +18,9 @@ import { useI18n } from '@/contexts/I18nContext';
 
 interface InsightsPanelProps {
   hasData: boolean;
+  soilProfile?: any;
+  suggestedCrops?: string[] | null;
+  suggestionRationale?: string | null;
 }
 
 // Removed SENTINEL_HUB_API_KEY and SENTINEL_HUB_INSTANCE_ID

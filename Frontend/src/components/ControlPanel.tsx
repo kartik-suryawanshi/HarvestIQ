@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input'; // Import Input component
-import { MapPin, Calendar, Wheat, Loader2, Maximize2, Sprout } from 'lucide-react'; // Add Sprout icon
+import { Input } from '@/components/ui/input';
+import { MapPin, Calendar, Wheat, Loader2, Maximize2, Sprout } from 'lucide-react';
 import IndiaMap from './IndiaMap';
 import { useI18n } from '@/contexts/I18nContext';
 import MapPickerDialog from '@/components/MapPickerDialog';
@@ -19,22 +19,27 @@ interface ControlPanelProps {
   onCropChange: (crop: string) => void;
   onSeasonChange: (season: string) => void;
   onGenerateForecast: () => void;
-  // New soil parameters
-  selectedSoilType: string;
-  onSoilTypeChange: (soilType: string) => void;
-  soilPH: string;
-  onSoilPHChange: (ph: string) => void;
-  organicMatter: string;
-  onOrganicMatterChange: (organicMatter: string) => void;
-  drainage: string;
-  onDrainageChange: (drainage: string) => void;
+  // soil form props (optional)
+  soilType?: string;
+  soilPh?: string;
+  soilOrganicMatter?: string;
+  soilDrainage?: '' | 'poor' | 'moderate' | 'good';
+  onSoilTypeChange?: (v: string) => void;
+  onSoilPhChange?: (v: string) => void;
+  onSoilOrganicMatterChange?: (v: string) => void;
+  onSoilDrainageChange?: (v: 'poor' | 'moderate' | 'good' | '') => void;
+  // ML inputs
+  sowingDate?: string;
+  onSowingDateChange?: (v: string) => void;
 }
 
 const crops = [
   { value: 'rice', label: 'Rice', season: 'Kharif' },
   { value: 'wheat', label: 'Wheat', season: 'Rabi' },
   { value: 'maize', label: 'Maize', season: 'Kharif' },
-  { value: 'sugarcane', label: 'Sugarcane', season: 'Annual' }
+  { value: 'sugarcane', label: 'Sugarcane', season: 'Annual' },
+  { value: 'cotton', label: 'Cotton', season: 'Kharif' },
+  { value: 'soybean', label: 'Soyabean', season: 'Kharif' }
 ];
 
 const seasons = [
@@ -50,9 +55,9 @@ const soilTypes = [
 ];
 
 const drainageOptions = [
-  { value: 'well-drained', label: 'Well-drained' },
-  { value: 'moderately-drained', label: 'Moderately drained' },
-  { value: 'poorly-drained', label: 'Poorly drained' },
+  { value: 'good', label: 'Well drained' },
+  { value: 'moderate', label: 'Moderately drained' },
+  { value: 'poor', label: 'Poorly drained' },
 ];
 
 const ControlPanel = ({
@@ -64,15 +69,16 @@ const ControlPanel = ({
   onCropChange,
   onSeasonChange,
   onGenerateForecast,
-  // New soil parameters
-  selectedSoilType,
+  soilType,
+  soilPh,
+  soilOrganicMatter,
+  soilDrainage,
   onSoilTypeChange,
-  soilPH,
-  onSoilPHChange,
-  organicMatter,
-  onOrganicMatterChange,
-  drainage,
-  onDrainageChange,
+  onSoilPhChange,
+  onSoilOrganicMatterChange,
+  onSoilDrainageChange,
+  sowingDate,
+  onSowingDateChange,
 }: ControlPanelProps) => {
   const { t } = useI18n();
   const [mapOpen, setMapOpen] = useState(false);
@@ -93,13 +99,13 @@ const ControlPanel = ({
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setMapOpen(true)}
-                    className="shadow-md"
+                    className="rounded-full bg-background/70 backdrop-blur border border-border px-3 py-1 shadow-md hover:bg-background/90"
                   >
-                    <Maximize2 className="h-4 w-4 mr-2" />
-                    Expand Map
+                    <Maximize2 className="h-4 w-4" />
+                    <span className="ml-2 text-xs font-medium">Full Map</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -154,7 +160,7 @@ const ControlPanel = ({
           </Select>
 
           {/* Taluka selection (placeholder, non-empty values) */}
-          <Select onValueChange={() => {}}>
+          <Select onValueChange={(v) => onSoilTypeChange?.(v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select Taluka (coming soon)" />
             </SelectTrigger>
@@ -188,6 +194,12 @@ const ControlPanel = ({
               ))}
             </SelectContent>
           </Select>
+
+          {/* ML input: Sowing Date only (temps auto-fetched) */}
+          <div>
+            <label className="text-xs text-muted-foreground">Sowing Date</label>
+            <Input type="date" value={sowingDate || ''} onChange={(e) => onSowingDateChange?.(e.target.value)} />
+          </div>
         </CardContent>
       </Card>
 
@@ -200,7 +212,7 @@ const ControlPanel = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select value={selectedSoilType} onValueChange={onSoilTypeChange}>
+          <Select value={soilType || ''} onValueChange={(v) => onSoilTypeChange?.(v)}>
             <SelectTrigger>
               <SelectValue placeholder={t('select_soil_type')} />
             </SelectTrigger>
@@ -216,8 +228,8 @@ const ControlPanel = ({
           <Input 
             type="number" 
             placeholder={t('ph_level')} 
-            value={soilPH}
-            onChange={(e) => onSoilPHChange(e.target.value)}
+            value={soilPh || ''}
+            onChange={(e) => onSoilPhChange?.(e.target.value)}
             step="0.1"
             min="0"
             max="14"
@@ -226,15 +238,14 @@ const ControlPanel = ({
           <Input 
             type="number" 
             placeholder={t('organic_matter')} 
-            value={organicMatter}
-            onChange={(e) => onOrganicMatterChange(e.target.value)}
+            value={soilOrganicMatter || ''}
+            onChange={(e) => onSoilOrganicMatterChange?.(e.target.value)}
             step="0.1"
             min="0"
             max="100"
-            suffix="%"
           />
 
-          <Select value={drainage} onValueChange={onDrainageChange}>
+          <Select value={soilDrainage || ''} onValueChange={(v) => onSoilDrainageChange?.(v as any)}>
             <SelectTrigger>
               <SelectValue placeholder={t('select_drainage')} />
             </SelectTrigger>
@@ -251,7 +262,7 @@ const ControlPanel = ({
 
       <Button 
         onClick={onGenerateForecast}
-        disabled={!selectedDistrict || !selectedCrop || !selectedSeason || !selectedSoilType || !soilPH || !organicMatter || !drainage || isLoading}
+        disabled={!selectedDistrict || !selectedCrop || !selectedSeason || !sowingDate || isLoading}
         className="w-full h-12 text-base font-medium bg-primary hover:bg-primary-dark"
         size="lg"
       >

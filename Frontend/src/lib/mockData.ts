@@ -311,13 +311,13 @@ export const generateForecast = (
   crop: string,
   season: string,
   scenario: string,
-  soilType: string,
-  soilPH: string,
-  organicMatter: string,
-  drainage: string
+  soilType?: string,
+  soilPH?: string,
+  organicMatter?: string,
+  drainage?: string
 ): ForecastData => {
   const scenarioData = mockForecastData[scenario] || mockForecastData.normal;
-  const cropData = scenarioData[crop] || scenarioData.normal.rice;
+  const cropData = (scenarioData as any)[crop] || (mockForecastData.normal as any).rice;
   
   return {
     ...cropData,
@@ -326,12 +326,12 @@ export const generateForecast = (
       ...cropData.yieldPrediction,
       confidence: Math.max(50, Math.min(95, cropData.yieldPrediction.confidence + Math.random() * 10 - 5))
     },
-    soilProfile: {
+    soilProfile: soilType && soilPH && organicMatter && drainage ? {
       type: soilType as SoilProfile['type'],
       ph: parseFloat(soilPH),
       organicMatterPct: parseFloat(organicMatter),
       drainage: drainage as SoilProfile['drainage'],
-    }
+    } : cropData.soilProfile
   };
 };
 
@@ -340,10 +340,10 @@ export const mockApiCall = (
   crop: string,
   season: string,
   scenario: string,
-  soilType: string,
-  soilPH: string,
-  organicMatter: string,
-  drainage: string
+  soilType?: string,
+  soilPH?: string,
+  organicMatter?: string,
+  drainage?: string
 ): Promise<ForecastData> => {
   return new Promise((resolve) => {
     // Simulate API delay

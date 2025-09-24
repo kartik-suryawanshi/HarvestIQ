@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import React, { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { 
   CloudRain, 
   Thermometer, 
@@ -26,37 +26,56 @@ interface DashboardCardsProps {
     rain: number;
     conditionIcon?: string;
   }>;
+  sowingDate?: string;
 }
 
-const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCardsProps) => {
+const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: DashboardCardsProps) => {
   const { t } = useI18n();
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const [detailed, setDetailed] = useState(false);
 
   const handleDownloadPDF = async () => {
     const input = dashboardRef.current;
     if (input) {
-      const { default: html2pdf } = await import('html2pdf.js');
+      // Try browser bundle first for better compatibility with Vite
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - module has no types
+      let html2pdf: any;
+      try {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - module has no types
+        const mod = await import('html2pdf.js/dist/html2pdf.bundle.min.js');
+        html2pdf = (mod as any).default ?? mod;
+      } catch {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - module has no types
+        const mod = await import('html2pdf.js');
+        html2pdf = (mod as any).default ?? mod;
+      }
       html2pdf().from(input).save(`HarvestIQ_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     }
   };
-
   if (!forecastData) {
     return (
-      <div className="flex flex-col gap-6">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="h-8 bg-muted rounded w-1/2"></div>
-                <div className="h-32 bg-muted rounded"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <CloudRain className="h-5 w-5 text-water" />
+            <span>Welcome to HarvestIQ</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Please select your district, crop, season, and sowing date in the left panel, then click
+              <span className="font-medium"> Generate Forecast</span> to see real-time weather, yield prediction, and your irrigation plan.
+            </p>
+            <div className="text-xs text-muted-foreground">
+              Tip: Add your soil type and drainage to improve recommendations.
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -232,6 +251,53 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCar
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Next Action Pill */}
+          {forecastData.irrigationSchedule?.length > 0 && (
+            <div className="p-3 rounded-lg border bg-primary/5 border-primary/30">
+              <div className="text-sm">
+                <span className="font-semibold">Next:</span>{' '}
+                {(() => {
+                  const first = forecastData.irrigationSchedule.find((w: any) => w.action === 'Irrigate') || forecastData.irrigationSchedule[0];
+                  // Convert Week x-y to date range if sowingDate provided
+                  const label = first?.week || '';
+                  let dateRange = '';
+                  if (sowingDate && /Week\s+(\d+)-(\d+)/i.test(label)) {
+                    const m = label.match(/Week\s+(\d+)-(\d+)/i);
+                    const startIdx = (parseInt(m?.[1] || '1', 10) - 1) * 7; // approx start day offset
+                    const endIdx = parseInt(m?.[2] || '2', 10) * 7 - 1; // approx end day offset
+                    const s = new Date(sowingDate);
+                    const start = new Date(s.getTime() + startIdx * 24 * 60 * 60 * 1000);
+                    const end = new Date(s.getTime() + endIdx * 24 * 60 * 60 * 1000);
+                    dateRange = `${start.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}–${end.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
+                  }
+                  const amount = first?.amount ? `${first.amount} mm` : '';
+                  return `${first?.action}: ${amount}${dateRange ? ` on ${dateRange}` : ''}. ${first?.reason || ''}`;
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Simple/Detailed Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">View</div>
+            <div className="flex items-center gap-2">
+              <Badge variant={!detailed ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setDetailed(false)}>Simple</Badge>
+              <Badge variant={detailed ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setDetailed(true)}>Detailed</Badge>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Badge>Water</Badge>
+              <span>Give water</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">No water</Badge>
+              <span>Skip watering</span>
+            </div>
+          </div>
+
           {/* Weekly Calendar */}
           <div>
             <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
@@ -250,27 +316,100 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCar
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="text-sm font-medium">{week.week}</div>
+                      <div className="text-sm font-medium">
+                        {(() => {
+                          if (!sowingDate) return week.week;
+                          const m = (week.week || '').match(/Week\s+(\d+)-(\d+)/i);
+                          if (!m) return week.week;
+                          const startIdx = (parseInt(m?.[1] || '1', 10) - 1) * 7;
+                          const endIdx = parseInt(m?.[2] || '2', 10) * 7 - 1;
+                          const s = new Date(sowingDate);
+                          const start = new Date(s.getTime() + startIdx * 24 * 60 * 60 * 1000);
+                          const end = new Date(s.getTime() + endIdx * 24 * 60 * 60 * 1000);
+                          return `${start.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
+                        })()}
+                      </div>
                       <Badge variant={week.action === 'Irrigate' ? "default" : "secondary"}>
-                        {week.action}
+                        {week.action === 'Irrigate' ? 'Water' : 'No water'}
                       </Badge>
                     </div>
+                    <div className="text-right">
+                      {week.action === 'Irrigate' ? (
+                        <>
+                          <div className="text-lg font-extrabold text-water">{week.amount} mm</div>
+                          {detailed && (
+                            <div className="text-[11px] text-muted-foreground">
+                              {(() => {
+                                const mm = parseFloat(week.amount || '0');
+                                if (!mm || Number.isNaN(mm)) return null;
+                                const lPerHectare = Math.round(mm * 10000);
+                                const lPerAcre = Math.round(mm * 4046.86);
+                                return `${lPerHectare.toLocaleString()} L/ha • ${lPerAcre.toLocaleString()} L/acre`;
+                              })()}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-sm font-semibold text-muted-foreground">—</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-sm mt-2">
+                    <div className="font-medium">
+                      {week.action === 'Irrigate' ? 'Do: Water the field' : 'Do: No water this time'}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {week.action === 'Irrigate' ? (
+                        <>How much: {week.amount} mm. Why: {week.reason}</>
+                      ) : (
+                        <>Why: {week.reason}</>
+                      )}
+                    </div>
                     {week.action === 'Irrigate' && (
-                      <div className="text-sm font-semibold text-water">{week.amount}mm</div>
+                      <div className="text-[12px] text-muted-foreground mt-1">
+                        Tip: Water early morning. If it rained {'>'}10 mm in last 24h, skip.
+                      </div>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">{week.reason}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Water Savings */}
+          {/* Water Savings & Budget */}
           <div className="p-3 bg-success/10 rounded-lg border border-success/30">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-success">{t('water_savings')}</span>
               <span className="font-bold text-success">{forecastData.waterSavings}%</span>
             </div>
+            {(() => {
+              const totalPlanned = (forecastData.irrigationSchedule || []).reduce((acc: number, s: any) => acc + (s.action === 'Irrigate' ? parseFloat(s.amount || '0') : 0), 0);
+              const fixed = 4 * 120;
+              const used = Math.max(0, Math.min(fixed, fixed - Math.round((forecastData.waterSavings / 100) * fixed)));
+              const pct = Math.round((used / fixed) * 100);
+              return (
+                <div>
+                  <div className="text-[11px] text-muted-foreground mb-1">Season water budget</div>
+                  <div className="w-full h-2 bg-muted rounded overflow-hidden">
+                    <div className="h-2 bg-success" style={{ width: `${pct}%` }}></div>
+                  </div>
+                  {detailed && (
+                    <div className="text-[11px] text-muted-foreground mt-1">Plan total: {Math.round(totalPlanned)} mm • Baseline: {fixed} mm</div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Farmer Tips */}
+          <div className="p-3 rounded-lg border bg-muted/40">
+            <div className="text-sm font-medium mb-1">Farmer tips</div>
+            <ul className="list-disc ml-5 text-xs text-muted-foreground space-y-1">
+              <li>Check soil moisture by hand (10–15 cm depth).</li>
+              <li>Level the field to avoid water loss.</li>
+              <li>Use mulching to keep moisture for longer.</li>
+              <li>During hot days (&gt;34°C), water a day earlier if plants wilt.</li>
+            </ul>
           </div>
 
           {/* Download Button */}
