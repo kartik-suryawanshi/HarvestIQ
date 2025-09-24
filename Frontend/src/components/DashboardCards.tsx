@@ -61,18 +61,13 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <CloudRain className="h-5 w-5 text-water" />
-            <span>Welcome to HarvestIQ</span>
+            <span>{t('welcome_title')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Please select your district, crop, season, and sowing date in the left panel, then click
-              <span className="font-medium"> Generate Forecast</span> to see real-time weather, yield prediction, and your irrigation plan.
-            </p>
-            <div className="text-xs text-muted-foreground">
-              Tip: Add your soil type and drainage to improve recommendations.
-            </div>
+            <p className="text-sm text-muted-foreground">{t('welcome_prompt')}</p>
+            <div className="text-xs text-muted-foreground">{t('welcome_tip')}</div>
           </div>
         </CardContent>
       </Card>
@@ -255,7 +250,7 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
           {forecastData.irrigationSchedule?.length > 0 && (
             <div className="p-3 rounded-lg border bg-primary/5 border-primary/30">
               <div className="text-sm">
-                <span className="font-semibold">Next:</span>{' '}
+                <span className="font-semibold">{t('next_action')}</span>{' '}
                 {(() => {
                   const first = forecastData.irrigationSchedule.find((w: any) => w.action === 'Irrigate') || forecastData.irrigationSchedule[0];
                   // Convert Week x-y to date range if sowingDate provided
@@ -279,22 +274,22 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
 
           {/* Simple/Detailed Toggle */}
           <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">View</div>
+            <div className="text-sm text-muted-foreground">{t('view')}</div>
             <div className="flex items-center gap-2">
-              <Badge variant={!detailed ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setDetailed(false)}>Simple</Badge>
-              <Badge variant={detailed ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setDetailed(true)}>Detailed</Badge>
+              <Badge variant={!detailed ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setDetailed(false)}>{t('simple')}</Badge>
+              <Badge variant={detailed ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setDetailed(true)}>{t('detailed')}</Badge>
             </div>
           </div>
 
           {/* Legend */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Badge>Water</Badge>
-              <span>Give water</span>
+              <Badge>{t('water')}</Badge>
+              <span>{t('water')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">No water</Badge>
-              <span>Skip watering</span>
+              <Badge variant="secondary">{t('no_water')}</Badge>
+              <span>{t('no_water')}</span>
             </div>
           </div>
 
@@ -330,7 +325,7 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
                         })()}
                       </div>
                       <Badge variant={week.action === 'Irrigate' ? "default" : "secondary"}>
-                        {week.action === 'Irrigate' ? 'Water' : 'No water'}
+                        {week.action === 'Irrigate' ? t('water') : t('no_water')}
                       </Badge>
                     </div>
                     <div className="text-right">
@@ -344,7 +339,7 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
                                 if (!mm || Number.isNaN(mm)) return null;
                                 const lPerHectare = Math.round(mm * 10000);
                                 const lPerAcre = Math.round(mm * 4046.86);
-                                return `${lPerHectare.toLocaleString()} L/ha • ${lPerAcre.toLocaleString()} L/acre`;
+                                return t('liters_per_ha_ac').replace('{{lha}}', lPerHectare.toLocaleString()).replace('{{lac}}', lPerAcre.toLocaleString());
                               })()}
                             </div>
                           )}
@@ -356,18 +351,18 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
                   </div>
                   <div className="text-sm mt-2">
                     <div className="font-medium">
-                      {week.action === 'Irrigate' ? 'Do: Water the field' : 'Do: No water this time'}
+                      {week.action === 'Irrigate' ? `${t('do_label')}: ${t('water')}` : `${t('do_label')}: ${t('no_water')}`}
                     </div>
                     <div className="text-muted-foreground">
                       {week.action === 'Irrigate' ? (
-                        <>How much: {week.amount} mm. Why: {week.reason}</>
+                        <>{t('how_much')}: {week.amount} mm. {t('why_label')}: {week.reason}</>
                       ) : (
-                        <>Why: {week.reason}</>
+                        <>{t('why_label')}: {week.reason}</>
                       )}
                     </div>
                     {week.action === 'Irrigate' && (
                       <div className="text-[12px] text-muted-foreground mt-1">
-                        Tip: Water early morning. If it rained {'>'}10 mm in last 24h, skip.
+                        {t('tip_irrigate_early')}
                       </div>
                     )}
                   </div>
@@ -389,7 +384,7 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
               const pct = Math.round((used / fixed) * 100);
               return (
                 <div>
-                  <div className="text-[11px] text-muted-foreground mb-1">Season water budget</div>
+                  <div className="text-[11px] text-muted-foreground mb-1">{t('season_water_budget')}</div>
                   <div className="w-full h-2 bg-muted rounded overflow-hidden">
                     <div className="h-2 bg-success" style={{ width: `${pct}%` }}></div>
                   </div>
@@ -403,12 +398,12 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast, sowingDate }: 
 
           {/* Farmer Tips */}
           <div className="p-3 rounded-lg border bg-muted/40">
-            <div className="text-sm font-medium mb-1">Farmer tips</div>
+            <div className="text-sm font-medium mb-1">{t('farmer_tips')}</div>
             <ul className="list-disc ml-5 text-xs text-muted-foreground space-y-1">
-              <li>Check soil moisture by hand (10–15 cm depth).</li>
-              <li>Level the field to avoid water loss.</li>
-              <li>Use mulching to keep moisture for longer.</li>
-              <li>During hot days (&gt;34°C), water a day earlier if plants wilt.</li>
+              <li>{t('tip_list_1')}</li>
+              <li>{t('tip_list_2')}</li>
+              <li>{t('tip_list_3')}</li>
+              <li>{t('tip_list_4')}</li>
             </ul>
           </div>
 

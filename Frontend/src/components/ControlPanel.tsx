@@ -105,11 +105,11 @@ const ControlPanel = ({
                     className="rounded-full bg-background/70 backdrop-blur border border-border px-3 py-1 shadow-md hover:bg-background/90"
                   >
                     <Maximize2 className="h-4 w-4" />
-                    <span className="ml-2 text-xs font-medium">Full Map</span>
+                    <span className="ml-2 text-xs font-medium">{t('full_map')}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <span>Tap to open full map and choose your district/taluka</span>
+                  <span>{t('open_full_map_hint')}</span>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -162,7 +162,7 @@ const ControlPanel = ({
           {/* Taluka selection (placeholder, non-empty values) */}
           <Select onValueChange={(v) => onSoilTypeChange?.(v)}>
             <SelectTrigger>
-              <SelectValue placeholder="Select Taluka (coming soon)" />
+              <SelectValue placeholder={t('select_taluka_placeholder')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
@@ -197,7 +197,7 @@ const ControlPanel = ({
 
           {/* ML input: Sowing Date only (temps auto-fetched) */}
           <div>
-            <label className="text-xs text-muted-foreground">Sowing Date</label>
+            <label className="text-xs text-muted-foreground">{t('sowing_date')}</label>
             <Input type="date" value={sowingDate || ''} onChange={(e) => onSowingDateChange?.(e.target.value)} />
           </div>
         </CardContent>
