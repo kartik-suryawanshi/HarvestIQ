@@ -26,7 +26,7 @@ export interface ForecastData {
     day: string;
     temp: number;
     rain: number;
-    icon: string;
+    conditionIcon?: string; // Add optional condition icon
   }>;
   yieldPrediction: {
     value: string;
@@ -62,7 +62,7 @@ const generateWeeklyForecast = () => {
     day,
     temp: Math.round(25 + Math.random() * 10),
     rain: Math.round(Math.random() * 15),
-    icon: 'cloud-rain'
+    conditionIcon: '01d' // Placeholder icon
   }));
 };
 

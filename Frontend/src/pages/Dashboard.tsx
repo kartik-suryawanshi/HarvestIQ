@@ -10,9 +10,13 @@ import PredictionHistory from '@/components/PredictionHistory';
 import { Button } from '@/components/ui/button';
 import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
+import { useI18n } from '@/contexts/I18nContext';
+
+// Weather config is read from environment via Vite.
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const { t } = useI18n();
   const { user } = useAuth();
   
   // State management
@@ -148,24 +152,28 @@ const Dashboard = () => {
 
     setIsSaving(true);
     try {
+      const payload = {
+        user_id: user.id,
+        district: selectedDistrict,
+        crop: selectedCrop,
+        season: selectedSeason,
+        scenario: scenario,
+        yield_prediction: Number(parseFloat(forecastData.yieldPrediction.value).toFixed(2)),
+        confidence_score: Math.round(forecastData.yieldPrediction.confidence),
+        risk_level: forecastData.riskAssessment.level > 70 ? 'high' : forecastData.riskAssessment.level > 40 ? 'moderate' : 'low',
+        irrigation_schedule: forecastData.irrigationSchedule,
+        weather_data: {
+          currentWeather: forecastData.currentWeather,
+          weatherTrend: forecastData.weatherTrend,
+          weeklyForecast: forecastData.weeklyForecast
+        },
+      } as const;
+
       const { error } = await supabase
         .from('predictions')
-        .insert({
-          user_id: user.id,
-          district: selectedDistrict,
-          crop: selectedCrop,
-          season: selectedSeason,
-          scenario: scenario,
-          yield_prediction: parseFloat(forecastData.yieldPrediction.value),
-          confidence_score: forecastData.yieldPrediction.confidence,
-          risk_level: forecastData.riskAssessment.level > 70 ? 'high' : forecastData.riskAssessment.level > 40 ? 'moderate' : 'low',
-          irrigation_schedule: forecastData.irrigationSchedule,
-          weather_data: {
-            currentWeather: forecastData.currentWeather,
-            weatherTrend: forecastData.weatherTrend,
-            weeklyForecast: forecastData.weeklyForecast
-          },
-        });
+        .insert(payload)
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -174,10 +182,11 @@ const Dashboard = () => {
         description: "Your forecast has been saved to history",
         duration: 3000,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Save prediction failed:', error);
       toast({
         title: "Save Failed",
-        description: "Could not save prediction to history",
+        description: error?.message || "Could not save prediction to history",
         variant: "destructive",
         duration: 3000,
       });
@@ -213,14 +222,14 @@ const Dashboard = () => {
               onSoilDrainageChange={(v) => setSoilDrainage(v)}
             />
           </div>
-
+    
           {/* Main Dashboard - Cards */}
           <div className="lg:col-span-6">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-4 mb-2">
                   <h2 className="text-2xl font-bold text-foreground">
-                    {showHistory ? 'Prediction History' : 'Forecast Dashboard'}
+                    {showHistory ? t('prediction_history') : t('forecast_dashboard')}
                   </h2>
                   <Button
                     variant="outline"
@@ -228,15 +237,15 @@ const Dashboard = () => {
                     onClick={() => setShowHistory(!showHistory)}
                   >
                     {showHistory ? <History className="w-4 h-4 mr-2" /> : <History className="w-4 h-4 mr-2" />}
-                    {showHistory ? 'Back to Dashboard' : 'View History'}
+                    {showHistory ? t('back_to_dashboard') : t('view_history')}
                   </Button>
                 </div>
                 <p className="text-muted-foreground">
                   {showHistory 
-                    ? 'Your saved crop predictions and forecasts'
+                    ? t('saved_predictions_subtitle')
                     : forecastData 
                       ? `Showing results for ${selectedCrop} in ${selectedDistrict}` 
-                      : 'Select location and crop to generate AI-powered forecast'
+                      : t('select_to_generate_subtitle')
                   }
                 </p>
               </div>
@@ -247,7 +256,7 @@ const Dashboard = () => {
                   className="flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  {isSaving ? 'Saving...' : 'Save Prediction'}
+                  {isSaving ? 'Saving...' : t('save_prediction')}
                 </Button>
               )}
             </div>
@@ -258,7 +267,7 @@ const Dashboard = () => {
               <DashboardCards 
                 forecastData={forecastData}
                 scenario={scenario}
-                weeklyForecastOverride={weeklyForecastData}
+                weeklyForecast={weeklyForecastData} // Pass weekly forecast data
               />
             )}
           </div>
