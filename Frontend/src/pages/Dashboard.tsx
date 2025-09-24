@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
+import { getCropSuggestion } from '@/lib/cropSuggest';
 
 // Weather config is read from environment via Vite.
 
@@ -28,6 +29,8 @@ const Dashboard = () => {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [suggestedCrops, setSuggestedCrops] = useState<string[] | null>(null);
+  const [suggestionRationale, setSuggestionRationale] = useState<string | null>(null);
   // Soil state (user-provided)
   const [soilType, setSoilType] = useState('');
   const [soilPh, setSoilPh] = useState('');
@@ -127,6 +130,35 @@ const Dashboard = () => {
       const data = await mockApiCall(selectedDistrict, selectedCrop, selectedSeason, scenario);
       
       setForecastData(data);
+
+      // Also fetch Gemini crop suggestions using provided soil inputs (if any provided)
+      const hasUserSoil = Boolean(
+        (soilType && soilType.trim()) ||
+        (soilDrainage && soilDrainage.trim && soilDrainage.trim()) ||
+        (soilPh && String(soilPh).trim()) ||
+        (soilOrganicMatter && String(soilOrganicMatter).trim())
+      );
+      if (hasUserSoil) {
+        try {
+          const res = await getCropSuggestion({
+            soilType: soilType?.trim().toLowerCase() || undefined,
+            ph: soilPh?.toString().trim() || undefined,
+            organicMatterPct: soilOrganicMatter?.toString().trim() || undefined,
+            drainage: (typeof soilDrainage === 'string' ? soilDrainage : '')?.toLowerCase() || undefined,
+            location: selectedDistrict || undefined,
+            crop: selectedCrop || undefined,
+          });
+          setSuggestedCrops(res.crops ?? []);
+          setSuggestionRationale(res.rationale ?? null);
+        } catch (e: any) {
+          console.error('Gemini suggestion failed:', e);
+          setSuggestedCrops(null);
+          setSuggestionRationale(null);
+        }
+      } else {
+        setSuggestedCrops(null);
+        setSuggestionRationale(null);
+      }
       
       // Success toast
       toast({
@@ -194,6 +226,8 @@ const Dashboard = () => {
       setIsSaving(false);
     }
   };
+
+  // Removed manual Suggest button; suggestions now fetched during forecast generation
 
   return (
     <div className="min-h-screen bg-background">
@@ -282,7 +316,7 @@ const Dashboard = () => {
             </div>
             
             <InsightsPanel
-              hasData={!!forecastData}
+              hasData={!!forecastData || (suggestedCrops && suggestedCrops.length > 0)}
               soilProfile={
                 soilType && soilDrainage && soilPh
                   ? {
@@ -293,6 +327,8 @@ const Dashboard = () => {
                     }
                   : forecastData?.soilProfile
               }
+              suggestedCrops={suggestedCrops}
+              suggestionRationale={suggestionRationale}
             />
           </div>
         </div>

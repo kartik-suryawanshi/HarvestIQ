@@ -23,6 +23,8 @@ interface InsightsPanelProps {
     organicMatterPct: number;
     drainage: 'poor' | 'moderate' | 'good';
   };
+  suggestedCrops?: string[] | null;
+  suggestionRationale?: string | null;
 }
 
 const getCropRecommendations = (soil?: InsightsPanelProps['soilProfile']): string[] => {
@@ -77,7 +79,7 @@ const getCropRecommendations = (soil?: InsightsPanelProps['soilProfile']): strin
   return Array.from(crops).sort((a, b) => a.localeCompare(b));
 };
 
-const InsightsPanel = ({ hasData, soilProfile }: InsightsPanelProps) => {
+const InsightsPanel = ({ hasData, soilProfile, suggestedCrops, suggestionRationale }: InsightsPanelProps) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { t } = useI18n();
 
@@ -134,14 +136,36 @@ const InsightsPanel = ({ hasData, soilProfile }: InsightsPanelProps) => {
             <div className="text-sm text-muted-foreground">Soil data will appear after generating a forecast.</div>
           )}
 
-          {soilProfile && (
+          {(soilProfile || (suggestedCrops && suggestedCrops.length > 0)) && (
             <div className="pt-3 border-t">
-              <div className="text-sm font-medium mb-2">Recommended Crops</div>
+              <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                <span>Recommended Crops</span>
+                <Badge variant={suggestedCrops && suggestedCrops.length > 0 ? 'default' : 'secondary'} className="text-xs">
+                  {suggestedCrops && suggestedCrops.length > 0 ? 'AI' : 'Rule-based'}
+                </Badge>
+              </div>
               <div className="flex flex-wrap gap-2">
-                {getCropRecommendations(soilProfile).map((crop) => (
-                  <Badge key={crop} variant="outline">{crop}</Badge>
+                {(suggestedCrops && suggestedCrops.length > 0
+                  ? suggestedCrops
+                  : getCropRecommendations(soilProfile)
+                ).map((crop, idx) => (
+                  <Badge key={`${crop}-${idx}`} variant="outline">{crop}</Badge>
                 ))}
               </div>
+            </div>
+          )}
+
+          {suggestedCrops && suggestedCrops.length > 0 && (
+            <div className="pt-3 border-t">
+              <div className="text-sm font-medium mb-2">AI Suggested Crops</div>
+              <div className="flex flex-wrap gap-2">
+                {suggestedCrops.map((crop, idx) => (
+                  <Badge key={`${crop}-${idx}`} variant="default">{crop}</Badge>
+                ))}
+              </div>
+              {suggestionRationale && (
+                <div className="text-xs text-muted-foreground mt-2">{suggestionRationale}</div>
+              )}
             </div>
           )}
         </CardContent>
