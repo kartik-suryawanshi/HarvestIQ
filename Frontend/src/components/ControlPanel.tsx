@@ -8,6 +8,7 @@ import IndiaMap from './IndiaMap';
 import { useI18n } from '@/contexts/I18nContext';
 import MapPickerDialog from '@/components/MapPickerDialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
 
 interface ControlPanelProps {
   selectedDistrict: string;
@@ -18,13 +19,27 @@ interface ControlPanelProps {
   onCropChange: (crop: string) => void;
   onSeasonChange: (season: string) => void;
   onGenerateForecast: () => void;
+  // soil form props (optional)
+  soilType?: string;
+  soilPh?: string;
+  soilOrganicMatter?: string;
+  soilDrainage?: '' | 'poor' | 'moderate' | 'good';
+  onSoilTypeChange?: (v: string) => void;
+  onSoilPhChange?: (v: string) => void;
+  onSoilOrganicMatterChange?: (v: string) => void;
+  onSoilDrainageChange?: (v: 'poor' | 'moderate' | 'good' | '') => void;
+  // ML inputs
+  sowingDate?: string;
+  onSowingDateChange?: (v: string) => void;
 }
 
 const crops = [
   { value: 'rice', label: 'Rice', season: 'Kharif' },
   { value: 'wheat', label: 'Wheat', season: 'Rabi' },
   { value: 'maize', label: 'Maize', season: 'Kharif' },
-  { value: 'sugarcane', label: 'Sugarcane', season: 'Annual' }
+  { value: 'sugarcane', label: 'Sugarcane', season: 'Annual' },
+  { value: 'cotton', label: 'Cotton', season: 'Kharif' },
+  { value: 'soybean', label: 'Soyabean', season: 'Kharif' }
 ];
 
 const seasons = [
@@ -40,7 +55,17 @@ const ControlPanel = ({
   onDistrictChange,
   onCropChange,
   onSeasonChange,
-  onGenerateForecast
+  onGenerateForecast,
+  soilType,
+  soilPh,
+  soilOrganicMatter,
+  soilDrainage,
+  onSoilTypeChange,
+  onSoilPhChange,
+  onSoilOrganicMatterChange,
+  onSoilDrainageChange,
+  sowingDate,
+  onSowingDateChange,
 }: ControlPanelProps) => {
   const { t } = useI18n();
   const [mapOpen, setMapOpen] = useState(false);
@@ -61,13 +86,13 @@ const ControlPanel = ({
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setMapOpen(true)}
-                    className="shadow-md"
+                    className="rounded-full bg-background/70 backdrop-blur border border-border px-3 py-1 shadow-md hover:bg-background/90"
                   >
-                    <Maximize2 className="h-4 w-4 mr-2" />
-                    Expand Map
+                    <Maximize2 className="h-4 w-4" />
+                    <span className="ml-2 text-xs font-medium">Full Map</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -122,7 +147,7 @@ const ControlPanel = ({
           </Select>
 
           {/* Taluka selection (placeholder, non-empty values) */}
-          <Select onValueChange={() => {}}>
+          <Select onValueChange={(v) => onSoilTypeChange?.(v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select Taluka (coming soon)" />
             </SelectTrigger>
@@ -156,6 +181,12 @@ const ControlPanel = ({
               ))}
             </SelectContent>
           </Select>
+
+          {/* ML input: Sowing Date only (temps auto-fetched) */}
+          <div>
+            <label className="text-xs text-muted-foreground">Sowing Date</label>
+            <Input type="date" value={sowingDate || ''} onChange={(e) => onSowingDateChange?.(e.target.value)} />
+          </div>
         </CardContent>
       </Card>
 

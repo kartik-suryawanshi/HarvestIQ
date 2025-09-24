@@ -17,6 +17,9 @@ import { useI18n } from '@/contexts/I18nContext';
 
 interface InsightsPanelProps {
   hasData: boolean;
+  soilProfile?: any;
+  suggestedCrops?: string[] | null;
+  suggestionRationale?: string | null;
 }
 
 const InsightsPanel = ({ hasData }: InsightsPanelProps) => {

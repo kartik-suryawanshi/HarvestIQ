@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button';
 import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
+import { predictCrop, getIrrigationSchedule } from '@/lib/mlClient';
 
-const WEATHER_API_KEY = '903fb6f8bda543aebc491957252409'; // Replace with your actual WeatherAPI.com key
-const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
+// Weather config is read from environment via Vite.
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -29,34 +29,66 @@ const Dashboard = () => {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]); // New state for 7-day forecast
+  // Soil state (user-provided)
+  const [soilType, setSoilType] = useState('');
+  const [soilPh, setSoilPh] = useState('');
+  const [soilOrganicMatter, setSoilOrganicMatter] = useState('');
+  const [soilDrainage, setSoilDrainage] = useState<'' | 'poor' | 'moderate' | 'good'>('');
+  // ML Inputs
+  const [avgTemp, setAvgTemp] = useState('');
+  const [tmax, setTmax] = useState('');
+  const [tmin, setTmin] = useState('');
+  const [sowingDate, setSowingDate] = useState('');
 
-  // Fetch 7-day forecast when selectedDistrict changes
+  // Weekly forecast (optional external API)
+  const WEATHER_API_BASE_URL = (import.meta as any).env?.VITE_WEATHER_API_BASE_URL || 'https://api.weatherapi.com/v1';
+  const WEATHER_API_KEY = (import.meta as any).env?.VITE_WEATHER_API_KEY;
+  const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]);
+  const [weatherTrendData, setWeatherTrendData] = useState<any[]>([]);
+
   useEffect(() => {
-    if (selectedDistrict) {
-      setIsLoading(true); // Set loading to true before fetching
-      fetchWeeklyForecast(selectedDistrict);
-    } else {
+    if (!selectedDistrict) {
       setWeeklyForecastData([]);
+      return;
+    }
+    // Only attempt fetch if API config provided
+    if (WEATHER_API_BASE_URL && WEATHER_API_KEY) {
+      setIsLoading(true);
+      fetchWeeklyForecast(selectedDistrict);
     }
   }, [selectedDistrict]);
 
   const fetchWeeklyForecast = async (district: string) => {
     try {
       const response = await fetch(
-        `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${district}&days=7`
+        `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(district)}&days=7`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const data = await response.json();
-      const formattedForecast = data.forecast.forecastday.map((day: any) => ({
+      const daysArr = (data?.forecast?.forecastday || []);
+      const formattedForecast = daysArr.map((day: any) => ({
         day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
         temp: day.day.avgtemp_c,
         rain: day.day.totalprecip_mm,
-        conditionIcon: day.day.condition.icon,
+        humidity: day.day.avghumidity,
+        conditionText: day.day.condition?.text,
+        conditionIcon: day.day.condition?.icon,
       }));
       setWeeklyForecastData(formattedForecast);
+      // Build a simple 30-day trend from daily precip (repeat pattern if fewer than 30)
+      const trend: any[] = [];
+      const source = daysArr.map((d: any) => ({
+        day: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        rainfall: d.day.totalprecip_mm,
+        temperature: d.day.avgtemp_c,
+      }));
+      for (let i = 0; i < 30; i++) {
+        const s = source[i % source.length] || { day: `D${i+1}`, rainfall: 0, temperature: 0 };
+        trend.push({ day: s.day, rainfall: s.rainfall, temperature: s.temperature });
+      }
+      setWeatherTrendData(trend);
     } catch (error) {
       console.error('Error fetching weekly forecast:', error);
       toast({
@@ -66,9 +98,46 @@ const Dashboard = () => {
         duration: 4000,
       });
       setWeeklyForecastData([]);
+      setWeatherTrendData([]);
     } finally {
-      setIsLoading(false); // Set loading to false after fetch attempt
+      setIsLoading(false);
     }
+  };
+
+  const computeRisk = (
+    weekly: Array<{ temp: number; rain: number; humidity?: number }>,
+    soil: { type?: string; drainage?: string },
+    crop: string,
+    sowDate?: string
+  ) => {
+    if (!weekly || !weekly.length) return { level: 40, reason: 'Insufficient data; using default risk.' };
+    const hotDays = weekly.filter((d) => (Number(d.temp) || 0) >= 34).length;
+    const veryHotDays = weekly.filter((d) => (Number(d.temp) || 0) >= 38).length;
+    const totalRain = weekly.reduce((a, b) => a + (Number(b.rain) || 0), 0);
+    const avgHumidity = weekly.reduce((a, b) => a + (Number(b.humidity ?? 0)), 0) / weekly.length || 0;
+
+    let risk = 20;
+    risk += hotDays * 6 + veryHotDays * 8;
+    if (totalRain < 20) risk += 20; else if (totalRain < 50) risk += 10;
+    if ((crop || '').toLowerCase().includes('rice') && avgHumidity >= 80) risk += 10;
+    const drainage = (soil.drainage || '').toLowerCase();
+    if (drainage === 'poor' && totalRain > 60) risk += 10;
+    if (drainage === 'good' && totalRain < 20) risk += 5;
+    if (sowDate) {
+      const s = new Date(sowDate);
+      const now = new Date();
+      const das = Math.max(0, Math.round((now.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+      if (das >= 40 && das <= 70) risk += 8;
+    }
+    risk = Math.max(0, Math.min(100, Math.round(risk)));
+    const reasons: string[] = [];
+    if (veryHotDays) reasons.push(`${veryHotDays} very hot day(s) (>38°C)`);
+    if (hotDays) reasons.push(`${hotDays} hot day(s) (>34°C)`);
+    reasons.push(`Rain next 7 days: ${Math.round(totalRain)} mm`);
+    if (avgHumidity) reasons.push(`Avg humidity: ${Math.round(avgHumidity)}%`);
+    if (drainage === 'poor' && totalRain > 60) reasons.push('Waterlogging risk on poorly drained soil');
+    if (drainage === 'good' && totalRain < 20) reasons.push('Fast drainage may increase drought stress');
+    return { level: risk, reason: reasons.join(' • ') };
   };
 
   const handleScenarioChange = (newScenario: string) => {
@@ -94,10 +163,10 @@ const Dashboard = () => {
   };
 
   const handleGenerateForecast = async () => {
-    if (!selectedDistrict || !selectedCrop || !selectedSeason) {
+    if (!selectedDistrict || !selectedCrop || !selectedSeason || !sowingDate) {
       toast({
         title: "Missing Information",
-        description: "Please select district, crop, and season before generating forecast",
+        description: "Please select district, crop, season, and sowing date before generating forecast",
         variant: "destructive",
         duration: 4000,
       });
@@ -114,9 +183,138 @@ const Dashboard = () => {
         duration: 8000,
       });
 
-      const data = await mockApiCall(selectedDistrict, selectedCrop, selectedSeason, scenario);
-      
-      setForecastData(data);
+      // If weekly forecast fetched, derive temps from it; otherwise use ML inputs if provided
+      if (weeklyForecastData.length) {
+        const temps = weeklyForecastData.map(d => d.temp);
+        const avg = temps.reduce((a:number,b:number)=>a+b,0) / temps.length;
+        const max = Math.max(...temps);
+        const min = Math.min(...temps);
+        setAvgTemp(String(avg.toFixed(1)));
+        setTmax(String(max.toFixed(1)));
+        setTmin(String(min.toFixed(1)));
+
+        const ml = await predictCrop({
+          crop_type: selectedCrop.charAt(0).toUpperCase() + selectedCrop.slice(1),
+          avg_temp: avg,
+          tmax: max,
+          tmin: min,
+          sowing_date: sowingDate,
+        });
+        // Get irrigation schedule using ML crop_cycle and weekly weather
+        let irrigationScheduleResp: any = null;
+        try {
+          irrigationScheduleResp = await getIrrigationSchedule({
+            crop_type: selectedCrop.charAt(0).toUpperCase() + selectedCrop.slice(1),
+            sowing_date: sowingDate,
+            weekly_forecast: weeklyForecastData,
+            crop_cycle: ml,
+            soil_profile: soilType ? { type: soilType, ph: soilPh ? Number(soilPh) : undefined, organicMatterPct: soilOrganicMatter ? Number(soilOrganicMatter) : undefined, drainage: soilDrainage || undefined } : undefined,
+          });
+        } catch (e) {
+          irrigationScheduleResp = null;
+        }
+
+        const normalizeFeatureName = (n: string) => {
+          if (!n) return '';
+          if (n.startsWith('Crop_')) {
+            const pretty = selectedCrop ? (selectedCrop.charAt(0).toUpperCase() + selectedCrop.slice(1)) : n.replace('Crop_', '');
+            return pretty;
+          }
+          return n.replace(/_/g, ' ');
+        };
+
+        const liveRisk = computeRisk(weeklyForecastData as any, { type: soilType, drainage: soilDrainage || undefined }, selectedCrop, sowingDate);
+        const today = (weeklyForecastData as any)[0];
+        const mapped: ForecastData = {
+          currentWeather: {
+            temperature: avg,
+            humidity: today?.humidity ?? 70,
+            conditions: today?.conditionText || '—'
+          },
+          riskAssessment: liveRisk,
+          weatherTrend: weatherTrendData.length ? weatherTrendData : (forecastData?.weatherTrend || []),
+          weeklyForecast: weeklyForecastData.length ? weeklyForecastData : (forecastData?.weeklyForecast || []),
+          yieldPrediction: { value: (ml.prediction.yield_t_ha ?? 0).toFixed(2), confidence: 80, vsHistorical: 0 },
+          featureImportance: (ml.feature_importances || []).map(f => ({ name: normalizeFeatureName(f.name), impact: Math.round((f.impact || 0) * 100) })),
+          explanation: ml.explanation_text || '',
+          irrigationSchedule: irrigationScheduleResp?.irrigation_schedule || (forecastData?.irrigationSchedule || []),
+          waterSavings: typeof irrigationScheduleResp?.water_savings === 'number' ? irrigationScheduleResp.water_savings : 0,
+          soilProfile: forecastData?.soilProfile || { type: 'Loam', ph: 6.5, organicMatterPct: 1.5, drainage: 'moderate' },
+        };
+        setForecastData(mapped);
+      } else if (avgTemp && tmax && tmin && sowingDate) {
+        const ml = await predictCrop({
+          crop_type: selectedCrop.charAt(0).toUpperCase() + selectedCrop.slice(1),
+          avg_temp: parseFloat(avgTemp),
+          tmax: parseFloat(tmax),
+          tmin: parseFloat(tmin),
+          sowing_date: sowingDate,
+        });
+        // Get irrigation schedule using ML crop_cycle and weekly weather
+        let irrigationScheduleResp: any = null;
+        try {
+          irrigationScheduleResp = await getIrrigationSchedule({
+            crop_type: selectedCrop.charAt(0).toUpperCase() + selectedCrop.slice(1),
+            sowing_date: sowingDate,
+            weekly_forecast: weeklyForecastData,
+            crop_cycle: ml,
+            soil_profile: soilType ? { type: soilType, ph: soilPh ? Number(soilPh) : undefined, organicMatterPct: soilOrganicMatter ? Number(soilOrganicMatter) : undefined, drainage: soilDrainage || undefined } : undefined,
+          });
+        } catch (e) {
+          irrigationScheduleResp = null;
+        }
+
+        // Map ML response to our ForecastData shape minimally
+        const normalizeFeatureName2 = (n: string) => {
+          if (!n) return '';
+          if (n.startsWith('Crop_')) {
+            const pretty = selectedCrop ? (selectedCrop.charAt(0).toUpperCase() + selectedCrop.slice(1)) : n.replace('Crop_', '');
+            return pretty;
+          }
+          return n.replace(/_/g, ' ');
+        };
+
+        const liveRisk2 = computeRisk(weeklyForecastData as any, { type: soilType, drainage: soilDrainage || undefined }, selectedCrop, sowingDate);
+        const today2 = (weeklyForecastData as any)[0];
+        const mapped: ForecastData = {
+          currentWeather: {
+            temperature: parseFloat(avgTemp),
+            humidity: today2?.humidity ?? 70,
+            conditions: today2?.conditionText || '—'
+          },
+          riskAssessment: liveRisk2,
+          weatherTrend: weatherTrendData.length ? weatherTrendData : (forecastData?.weatherTrend || []),
+          weeklyForecast: weeklyForecastData.length ? weeklyForecastData : (forecastData?.weeklyForecast || []),
+          yieldPrediction: {
+            value: (ml.prediction.yield_t_ha ?? 0).toFixed(2),
+            confidence: 80,
+            vsHistorical: 0,
+          },
+          featureImportance: (ml.feature_importances || []).map(f => ({ name: normalizeFeatureName2(f.name), impact: Math.round((f.impact || 0) * 100) })),
+          explanation: ml.explanation_text || '',
+          irrigationSchedule: irrigationScheduleResp?.irrigation_schedule || (forecastData?.irrigationSchedule || []),
+          waterSavings: typeof irrigationScheduleResp?.water_savings === 'number' ? irrigationScheduleResp.water_savings : 0,
+          soilProfile: forecastData?.soilProfile || { type: 'Loam', ph: 6.5, organicMatterPct: 1.5, drainage: 'moderate' },
+        };
+        setForecastData(mapped);
+      } else {
+        const data = await mockApiCall(selectedDistrict, selectedCrop, selectedSeason, scenario);
+        const enriched: ForecastData = {
+          ...data,
+          weeklyForecast: weeklyForecastData.length ? weeklyForecastData : data.weeklyForecast,
+          weatherTrend: weatherTrendData.length ? weatherTrendData : data.weatherTrend,
+        };
+        if (weeklyForecastData.length) {
+          const today3 = (weeklyForecastData as any)[0];
+          enriched.currentWeather = {
+            temperature: today3?.temp ?? data.currentWeather.temperature,
+            humidity: today3?.humidity ?? data.currentWeather.humidity,
+            conditions: today3?.conditionText || data.currentWeather.conditions,
+          };
+          enriched.riskAssessment = computeRisk(weeklyForecastData as any, { type: soilType, drainage: soilDrainage || undefined }, selectedCrop, sowingDate);
+        }
+        setForecastData(enriched);
+      }
       
       // Success toast
       toast({
@@ -185,6 +383,7 @@ const Dashboard = () => {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-background">
       <Header scenario={scenario} onScenarioChange={handleScenarioChange} />
@@ -202,6 +401,16 @@ const Dashboard = () => {
               onCropChange={setSelectedCrop}
               onSeasonChange={setSelectedSeason}
               onGenerateForecast={handleGenerateForecast}
+              soilType={soilType}
+              soilPh={soilPh}
+              soilOrganicMatter={soilOrganicMatter}
+              soilDrainage={soilDrainage}
+              onSoilTypeChange={setSoilType}
+              onSoilPhChange={setSoilPh}
+              onSoilOrganicMatterChange={setSoilOrganicMatter}
+              onSoilDrainageChange={(v) => setSoilDrainage(v)}
+              sowingDate={sowingDate}
+              onSowingDateChange={setSowingDate}
             />
           </div>
     
@@ -231,15 +440,19 @@ const Dashboard = () => {
                   }
                 </p>
               </div>
-              {!showHistory && forecastData && (
-                <Button
-                  onClick={savePrediction}
-                  disabled={isSaving}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  {isSaving ? 'Saving...' : t('save_prediction')}
-                </Button>
+              {!showHistory && (
+                <div className="flex items-center gap-3">
+                  {forecastData && (
+                    <Button
+                      onClick={savePrediction}
+                      disabled={isSaving}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      {isSaving ? 'Saving...' : t('save_prediction')}
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
             
@@ -247,9 +460,10 @@ const Dashboard = () => {
               <PredictionHistory />
             ) : (
               <DashboardCards 
-                forecastData={forecastData} 
+                forecastData={forecastData}
                 scenario={scenario}
                 weeklyForecast={weeklyForecastData} // Pass weekly forecast data
+                sowingDate={sowingDate}
               />
             )}
           </div>
