@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Calendar, Wheat, Loader2 } from 'lucide-react';
 import IndiaMap from './IndiaMap';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface ControlPanelProps {
   selectedDistrict: string;
@@ -39,13 +40,14 @@ const ControlPanel = ({
   onSeasonChange,
   onGenerateForecast
 }: ControlPanelProps) => {
+  const { t } = useI18n();
   return (
     <div className="space-y-6">
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <span>Location Selection</span>
+            <span>{t('location_selection')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -54,7 +56,7 @@ const ControlPanel = ({
           {selectedDistrict && (
             <div className="p-3 bg-accent rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Selected Location:</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('selected_location')}</span>
                 <Badge variant="secondary">{selectedDistrict}</Badge>
               </div>
             </div>
@@ -66,13 +68,13 @@ const ControlPanel = ({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Wheat className="h-5 w-5 text-primary" />
-            <span>Crop Selection</span>
+            <span>{t('crop_selection')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Select value={selectedCrop} onValueChange={onCropChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Choose crop type" />
+              <SelectValue placeholder={t('choose_crop')} />
             </SelectTrigger>
             <SelectContent>
               {crops.map((crop) => (
@@ -94,13 +96,13 @@ const ControlPanel = ({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="h-5 w-5 text-primary" />
-            <span>Growing Season</span>
+            <span>{t('growing_season')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Select value={selectedSeason} onValueChange={onSeasonChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Select season" />
+              <SelectValue placeholder={t('select_season')} />
             </SelectTrigger>
             <SelectContent>
               {seasons.map((season) => (
@@ -125,10 +127,10 @@ const ControlPanel = ({
         {isLoading ? (
           <div className="flex items-center space-x-2">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Generating Forecast...</span>
+            <span>{t('generate_forecast')}</span>
           </div>
         ) : (
-          <span>Generate Forecast</span>
+          <span>{t('generate_forecast')}</span>
         )}
       </Button>
     </div>
