@@ -1,5 +1,12 @@
 // Mock agricultural data for different scenarios
 
+export interface SoilProfile {
+  type: string; // e.g., Loam, Clay Loam, Sandy Loam
+  ph: number; // e.g., 6.5
+  organicMatterPct: number; // percent
+  drainage: 'poor' | 'moderate' | 'good';
+}
+
 export interface ForecastData {
   currentWeather: {
     temperature: number;
@@ -38,6 +45,7 @@ export interface ForecastData {
     reason: string;
   }>;
   waterSavings: number;
+  soilProfile: SoilProfile;
 }
 
 const generateWeatherTrend = (baseRainfall: number, variation: number) => {
@@ -90,7 +98,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Irrigate', amount: '75', reason: 'Critical flowering period' },
         { week: 'Week 7-8', action: 'Skip', reason: 'Expected monsoon rains' }
       ],
-      waterSavings: 23
+      waterSavings: 23,
+      soilProfile: { type: 'Clay Loam', ph: 6.4, organicMatterPct: 2.1, drainage: 'moderate' }
     },
     'wheat': {
       currentWeather: {
@@ -122,7 +131,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Irrigate', amount: '45', reason: 'Pre-flowering support' },
         { week: 'Week 7-8', action: 'Skip', reason: 'Natural moisture sufficient' }
       ],
-      waterSavings: 31
+      waterSavings: 31,
+      soilProfile: { type: 'Loam', ph: 6.8, organicMatterPct: 1.8, drainage: 'good' }
     },
     'maize': {
       currentWeather: {
@@ -154,7 +164,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Irrigate', amount: '60', reason: 'Tasseling stage' },
         { week: 'Week 7-8', action: 'Skip', reason: 'Natural precipitation' }
       ],
-      waterSavings: 18
+      waterSavings: 18,
+      soilProfile: { type: 'Sandy Loam', ph: 6.2, organicMatterPct: 1.5, drainage: 'good' }
     },
     'sugarcane': {
       currentWeather: {
@@ -186,7 +197,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Skip', reason: 'Monsoon rains' },
         { week: 'Week 7-8', action: 'Irrigate', amount: '70', reason: 'Maturation support' }
       ],
-      waterSavings: 12
+      waterSavings: 12,
+      soilProfile: { type: 'Loam to Clay Loam', ph: 6.5, organicMatterPct: 2.0, drainage: 'moderate' }
     }
   },
   drought: {
@@ -220,7 +232,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Irrigate', amount: '80', reason: 'Sustain plant health' },
         { week: 'Week 7-8', action: 'Irrigate', amount: '75', reason: 'Recovery irrigation' }
       ],
-      waterSavings: -45
+      waterSavings: -45,
+      soilProfile: { type: 'Clay', ph: 6.7, organicMatterPct: 1.9, drainage: 'poor' }
     },
     'maize': {
       currentWeather: {
@@ -252,7 +265,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Irrigate', amount: '90', reason: 'Maintain plant viability' },
         { week: 'Week 7-8', action: 'Irrigate', amount: '85', reason: 'Recovery support' }
       ],
-      waterSavings: -60
+      waterSavings: -60,
+      soilProfile: { type: 'Sandy', ph: 6.1, organicMatterPct: 0.9, drainage: 'good' }
     }
   },
   wet: {
@@ -286,7 +300,8 @@ export const mockForecastData: Record<string, Record<string, ForecastData>> = {
         { week: 'Week 5-6', action: 'Skip', reason: 'Continued heavy rains' },
         { week: 'Week 7-8', action: 'Skip', reason: 'Natural water sufficient' }
       ],
-      waterSavings: 85
+      waterSavings: 85,
+      soilProfile: { type: 'Clay', ph: 6.3, organicMatterPct: 2.4, drainage: 'poor' }
     }
   }
 };
