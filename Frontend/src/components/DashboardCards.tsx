@@ -14,6 +14,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface DashboardCardsProps {
   forecastData: any;
@@ -21,6 +22,7 @@ interface DashboardCardsProps {
 }
 
 const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
+  const { t } = useI18n();
   if (!forecastData) {
     return (
       <div className="flex flex-col gap-6">
@@ -60,7 +62,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <CloudRain className="h-5 w-5 text-water" />
-            <span>Weather & Risk Assessment</span>
+            <span>{t('weather_risk')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -69,14 +71,14 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
             <div className="flex items-center space-x-2">
               <Thermometer className="h-4 w-4 text-warning" />
               <div>
-                <div className="text-sm text-muted-foreground">Temperature</div>
+                <div className="text-sm text-muted-foreground">{t('temperature')}</div>
                 <div className="font-semibold">{forecastData.currentWeather.temperature}°C</div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <Droplets className="h-4 w-4 text-water" />
               <div>
-                <div className="text-sm text-muted-foreground">Humidity</div>
+                <div className="text-sm text-muted-foreground">{t('humidity')}</div>
                 <div className="font-semibold">{forecastData.currentWeather.humidity}%</div>
               </div>
             </div>
@@ -100,7 +102,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           <div>
             <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
               <TrendingUp className="h-4 w-4" />
-              <span>30-Day Weather Trend</span>
+              <span>{t('trend_30d')}</span>
             </h4>
             <div className="h-32">
               <ResponsiveContainer width="100%" height="100%">
@@ -123,7 +125,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
 
           {/* 7-Day Forecast */}
           <div>
-            <h4 className="text-sm font-medium mb-3">Next 7 Days</h4>
+            <h4 className="text-sm font-medium mb-3">{t('next_7_days')}</h4>
             <div className="grid grid-cols-7 gap-1">
               {forecastData.weeklyForecast.map((day: any, index: number) => (
                 <div key={index} className="text-center p-1">
@@ -143,7 +145,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Target className="h-5 w-5 text-success" />
-            <span>Yield Prediction</span>
+            <span>{t('yield_prediction')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -153,7 +155,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
               {forecastData.yieldPrediction.value} tonnes/hectare
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <span className="text-sm text-muted-foreground">Confidence:</span>
+              <span className="text-sm text-muted-foreground">{t('confidence')}:</span>
               <Progress value={forecastData.yieldPrediction.confidence} className="w-20 h-2" />
               <span className="text-sm font-medium">{forecastData.yieldPrediction.confidence}%</span>
             </div>
@@ -162,7 +164,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           {/* vs Historical Comparison */}
           <div className="p-3 bg-muted rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">vs. Historical Average</span>
+              <span className="text-sm text-muted-foreground">{t('vs_historical')}</span>
               <Badge variant={forecastData.yieldPrediction.vsHistorical > 0 ? "default" : "secondary"}>
                 {forecastData.yieldPrediction.vsHistorical > 0 ? '+' : ''}{forecastData.yieldPrediction.vsHistorical}%
               </Badge>
@@ -173,7 +175,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           <div>
             <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
-              <span>Key Factors Impact</span>
+              <span>{t('key_factors')}</span>
             </h4>
             <div className="space-y-2">
               {forecastData.featureImportance.map((feature: any, index: number) => (
@@ -200,7 +202,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Droplets className="h-5 w-5 text-water" />
-            <span>Smart Irrigation Schedule</span>
+            <span>{t('irrigation_schedule')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -208,7 +210,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           <div>
             <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
               <Calendar className="h-4 w-4" />
-              <span>Recommended Schedule</span>
+              <span>{t('recommended_schedule')}</span>
             </h4>
             <div className="space-y-2">
               {forecastData.irrigationSchedule.map((week: any, index: number) => (
@@ -240,7 +242,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           {/* Water Savings */}
           <div className="p-3 bg-success/10 rounded-lg border border-success/30">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-success">Estimated Water Savings</span>
+              <span className="text-sm font-medium text-success">{t('water_savings')}</span>
               <span className="font-bold text-success">{forecastData.waterSavings}%</span>
             </div>
           </div>
@@ -248,7 +250,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           {/* Download Button */}
           <Button className="w-full" variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Download Schedule PDF
+            {t('download_schedule')}
           </Button>
         </CardContent>
       </Card>

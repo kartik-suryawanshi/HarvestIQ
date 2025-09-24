@@ -6,22 +6,24 @@ import 'leaflet/dist/leaflet.css';
 interface IndiaMapProps {
   onDistrictSelect: (district: string) => void;
   selectedDistrict: string;
+  heightClass?: string; // e.g., 'h-64', 'h-96'
+  enableLocate?: boolean;
 }
 
-// Mock districts with coordinates for demo
+// Mock districts with coordinates for demo (Maharashtra only)
 const mockDistricts = [
+  { name: 'Mumbai, Maharashtra', coordinates: [72.8777, 19.0760] },
+  { name: 'Thane, Maharashtra', coordinates: [72.9716, 19.2183] },
   { name: 'Pune, Maharashtra', coordinates: [73.8567, 18.5204] },
   { name: 'Nashik, Maharashtra', coordinates: [73.7898, 19.9975] },
   { name: 'Aurangabad, Maharashtra', coordinates: [75.3433, 19.8762] },
-  { name: 'Bharatpur, Rajasthan', coordinates: [77.4977, 27.2152] },
-  { name: 'Kota, Rajasthan', coordinates: [75.8648, 25.2138] },
-  { name: 'Ludhiana, Punjab', coordinates: [75.8573, 30.9010] },
-  { name: 'Amritsar, Punjab', coordinates: [74.8723, 31.6340] },
-  { name: 'Mysore, Karnataka', coordinates: [76.6394, 12.2958] },
-  { name: 'Belgaum, Karnataka', coordinates: [74.4977, 15.8497] }
+  { name: 'Nagpur, Maharashtra', coordinates: [79.0882, 21.1458] },
+  { name: 'Kolhapur, Maharashtra', coordinates: [74.2433, 16.7040] },
+  { name: 'Satara, Maharashtra', coordinates: [74.0183, 17.6805] },
+  { name: 'Solapur, Maharashtra', coordinates: [75.9064, 17.6599] }
 ];
 
-const IndiaMap = ({ onDistrictSelect, selectedDistrict }: IndiaMapProps) => {
+const IndiaMap = ({ onDistrictSelect, selectedDistrict, heightClass = 'h-64', enableLocate = false }: IndiaMapProps) => {
   const defaultCenter: [number, number] = [20.5937, 78.9629];
 
   // Fix Leaflet default icon URLs for Vite builds
@@ -41,7 +43,7 @@ const IndiaMap = ({ onDistrictSelect, selectedDistrict }: IndiaMapProps) => {
   }, []);
 
   return (
-    <div className="w-full h-64 rounded-lg overflow-hidden border border-border">
+    <div className={`w-full ${heightClass} rounded-lg overflow-hidden border border-border`}>
       <MapContainer
         center={defaultCenter}
         zoom={5}
@@ -54,6 +56,10 @@ const IndiaMap = ({ onDistrictSelect, selectedDistrict }: IndiaMapProps) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {enableLocate && (
+          <></>
+        )}
 
         {mockDistricts.map((district) => {
           const isSelected = selectedDistrict === district.name;

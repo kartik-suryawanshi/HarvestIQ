@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Calendar, Wheat, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Wheat, Loader2, Maximize2 } from 'lucide-react';
 import IndiaMap from './IndiaMap';
 import { useI18n } from '@/contexts/I18nContext';
+import MapPickerDialog from '@/components/MapPickerDialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ControlPanelProps {
   selectedDistrict: string;
@@ -41,6 +43,7 @@ const ControlPanel = ({
   onGenerateForecast
 }: ControlPanelProps) => {
   const { t } = useI18n();
+  const [mapOpen, setMapOpen] = useState(false);
   return (
     <div className="space-y-6">
       <Card className="shadow-sm">
@@ -51,7 +54,28 @@ const ControlPanel = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <IndiaMap onDistrictSelect={onDistrictChange} selectedDistrict={selectedDistrict} />
+          <div className="relative pb-12">
+            <IndiaMap onDistrictSelect={onDistrictChange} selectedDistrict={selectedDistrict} heightClass="h-72" />
+            <div className="absolute right-3 bottom-3 z-20 pointer-events-auto">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setMapOpen(true)}
+                    className="shadow-md"
+                  >
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    Expand Map
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Tap to open full map and choose your district/taluka</span>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
           
           {selectedDistrict && (
             <div className="p-3 bg-accent rounded-lg">
@@ -63,6 +87,13 @@ const ControlPanel = ({
           )}
         </CardContent>
       </Card>
+
+      <MapPickerDialog
+        open={mapOpen}
+        onOpenChange={setMapOpen}
+        selectedDistrict={selectedDistrict}
+        onSelect={(d) => { onDistrictChange(d); setMapOpen(false); }}
+      />
 
       <Card className="shadow-sm">
         <CardHeader>
@@ -87,6 +118,16 @@ const ControlPanel = ({
                   </div>
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          {/* Taluka selection (placeholder, non-empty values) */}
+          <Select onValueChange={() => {}}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Taluka (coming soon)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
