@@ -12,6 +12,9 @@ import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 
+const WEATHER_API_KEY = '903fb6f8bda543aebc491957252409'; // Replace with your actual WeatherAPI.com key
+const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
+
 const Dashboard = () => {
   const { toast } = useToast();
   const { t } = useI18n();
@@ -26,6 +29,47 @@ const Dashboard = () => {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]); // New state for 7-day forecast
+
+  // Fetch 7-day forecast when selectedDistrict changes
+  useEffect(() => {
+    if (selectedDistrict) {
+      setIsLoading(true); // Set loading to true before fetching
+      fetchWeeklyForecast(selectedDistrict);
+    } else {
+      setWeeklyForecastData([]);
+    }
+  }, [selectedDistrict]);
+
+  const fetchWeeklyForecast = async (district: string) => {
+    try {
+      const response = await fetch(
+        `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${district}&days=7`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      const formattedForecast = data.forecast.forecastday.map((day: any) => ({
+        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        temp: day.day.avgtemp_c,
+        rain: day.day.totalprecip_mm,
+        conditionIcon: day.day.condition.icon,
+      }));
+      setWeeklyForecastData(formattedForecast);
+    } catch (error) {
+      console.error('Error fetching weekly forecast:', error);
+      toast({
+        title: 'Weather Forecast Error',
+        description: 'Failed to fetch 7-day weather forecast. Please try again later.',
+        variant: 'destructive',
+        duration: 4000,
+      });
+      setWeeklyForecastData([]);
+    } finally {
+      setIsLoading(false); // Set loading to false after fetch attempt
+    }
+  };
 
   const handleScenarioChange = (newScenario: string) => {
     setScenario(newScenario);
@@ -205,6 +249,7 @@ const Dashboard = () => {
               <DashboardCards 
                 forecastData={forecastData} 
                 scenario={scenario}
+                weeklyForecast={weeklyForecastData} // Pass weekly forecast data
               />
             )}
           </div>
