@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Agricultural Forecasting Design System - All colors in HSL */
+
+@layer base {
+  :root {
+    /* Core Background */
+    --background: 210 25% 98%;
+    --foreground: 155 25% 15%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 155 25% 15%;
+
+    /* Popover System */
+    --popover: 0 0% 100%;
+    --popover-foreground: 155 25% 15%;
+
+    /* Agricultural Green Primary */
+    --primary: 155 65% 25%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 155 45% 35%;
+    --primary-dark: 155 75% 20%;
+
+    /* Sky Blue Secondary (Weather/Water) */
+    --secondary: 200 85% 85%;
+    --secondary-foreground: 200 85% 15%;
+    --water-blue: 200 75% 45%;
+    --water-blue-foreground: 0 0% 98%;
+
+    /* Earth Tones */
+    --muted: 45 15% 94%;
+    --muted-foreground: 155 15% 40%;
+    --earth-brown: 35 25% 35%;
+    --earth-brown-foreground: 0 0% 98%;
+
+    /* Agricultural Accent */
+    --accent: 155 35% 88%;
+    --accent-foreground: 155 65% 25%;
+
+    /* Alert System */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 43 96% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* UI Elements */
+    --border: 155 15% 88%;
+    --input: 155 15% 95%;
+    --ring: 155 65% 25%;
+
+    /* Agricultural Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-water: linear-gradient(135deg, hsl(var(--water-blue)), hsl(200 85% 65%));
+    --gradient-earth: linear-gradient(135deg, hsl(var(--earth-brown)), hsl(35 35% 45%));
+    --gradient-crop: linear-gradient(135deg, hsl(142 76% 36%), hsl(155 65% 25%));
+
+    /* Agricultural Shadows */
+    --shadow-soft: 0 2px 10px -2px hsl(var(--primary) / 0.1);
+    --shadow-medium: 0 8px 25px -5px hsl(var(--primary) / 0.15);
+    --shadow-strong: 0 15px 35px -5px hsl(var(--primary) / 0.2);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Core Background - Dark agricultural theme */
+    --background: 155 25% 8%;
+    --foreground: 155 15% 92%;
+
+    /* Card System */
+    --card: 155 20% 12%;
+    --card-foreground: 155 15% 92%;
+
+    /* Popover System */
+    --popover: 155 20% 12%;
+    --popover-foreground: 155 15% 92%;
+
+    /* Agricultural Green Primary - Lighter in dark mode */
+    --primary: 155 55% 45%;
+    --primary-foreground: 155 25% 8%;
+    --primary-light: 155 45% 55%;
+    --primary-dark: 155 65% 35%;
+
+    /* Sky Blue Secondary - Adjusted for dark */
+    --secondary: 200 25% 25%;
+    --secondary-foreground: 200 15% 85%;
+    --water-blue: 200 65% 55%;
+    --water-blue-foreground: 155 25% 8%;
+
+    /* Earth Tones - Dark mode */
+    --muted: 155 15% 18%;
+    --muted-foreground: 155 10% 65%;
+    --earth-brown: 35 35% 45%;
+    --earth-brown-foreground: 155 25% 8%;
+
+    /* Agricultural Accent - Dark */
+    --accent: 155 25% 22%;
+    --accent-foreground: 155 55% 45%;
+
+    /* Alert System - Dark mode */
+    --success: 142 66% 46%;
+    --success-foreground: 155 25% 8%;
+    --warning: 43 86% 66%;
+    --warning-foreground: 43 96% 15%;
+    --destructive: 0 74% 70%;
+    --destructive-foreground: 155 25% 8%;
+
+    /* UI Elements */
+    --border: 155 15% 25%;
+    --input: 155 15% 25%;
+    --ring: 155 55% 45%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
