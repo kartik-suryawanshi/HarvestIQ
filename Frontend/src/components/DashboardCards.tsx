@@ -18,9 +18,10 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Cartesia
 interface DashboardCardsProps {
   forecastData: any;
   scenario: string;
+  weeklyForecastOverride?: Array<{ day: string; temp: number; rain: number; conditionIcon?: string }>;
 }
 
-const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
+const DashboardCards = ({ forecastData, scenario, weeklyForecastOverride }: DashboardCardsProps) => {
   if (!forecastData) {
     return (
       <div className="flex flex-col gap-6">
@@ -125,7 +126,7 @@ const DashboardCards = ({ forecastData, scenario }: DashboardCardsProps) => {
           <div>
             <h4 className="text-sm font-medium mb-3">Next 7 Days</h4>
             <div className="grid grid-cols-7 gap-1">
-              {forecastData.weeklyForecast.map((day: any, index: number) => (
+              {(weeklyForecastOverride && weeklyForecastOverride.length ? weeklyForecastOverride : forecastData.weeklyForecast).map((day: any, index: number) => (
                 <div key={index} className="text-center p-1">
                   <div className="text-xs text-muted-foreground">{day.day}</div>
                   <CloudRain className="h-4 w-4 mx-auto my-1 text-water" />

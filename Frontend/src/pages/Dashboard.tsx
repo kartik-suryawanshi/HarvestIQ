@@ -30,6 +30,53 @@ const Dashboard = () => {
   const [soilOrganicMatter, setSoilOrganicMatter] = useState('');
   const [soilDrainage, setSoilDrainage] = useState<'' | 'poor' | 'moderate' | 'good'>('');
 
+  // Weekly forecast (optional external API)
+  const WEATHER_API_BASE_URL = (import.meta as any).env?.VITE_WEATHER_API_BASE_URL;
+  const WEATHER_API_KEY = (import.meta as any).env?.VITE_WEATHER_API_KEY;
+  const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!selectedDistrict) {
+      setWeeklyForecastData([]);
+      return;
+    }
+    // Only attempt fetch if API config provided
+    if (WEATHER_API_BASE_URL && WEATHER_API_KEY) {
+      setIsLoading(true);
+      fetchWeeklyForecast(selectedDistrict);
+    }
+  }, [selectedDistrict]);
+
+  const fetchWeeklyForecast = async (district: string) => {
+    try {
+      const response = await fetch(
+        `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(district)}&days=7`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      const formattedForecast = (data?.forecast?.forecastday || []).map((day: any) => ({
+        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        temp: day.day.avgtemp_c,
+        rain: day.day.totalprecip_mm,
+        conditionIcon: day.day.condition.icon,
+      }));
+      setWeeklyForecastData(formattedForecast);
+    } catch (error) {
+      console.error('Error fetching weekly forecast:', error);
+      toast({
+        title: 'Weather Forecast Error',
+        description: 'Failed to fetch 7-day weather forecast. Please try again later.',
+        variant: 'destructive',
+        duration: 4000,
+      });
+      setWeeklyForecastData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleScenarioChange = (newScenario: string) => {
     setScenario(newScenario);
     
@@ -211,6 +258,7 @@ const Dashboard = () => {
               <DashboardCards 
                 forecastData={forecastData}
                 scenario={scenario}
+                weeklyForecastOverride={weeklyForecastData}
               />
             )}
           </div>
