@@ -17,67 +17,9 @@ import { useI18n } from '@/contexts/I18nContext';
 
 interface InsightsPanelProps {
   hasData: boolean;
-  soilProfile?: {
-    type: string;
-    ph: number;
-    organicMatterPct: number;
-    drainage: 'poor' | 'moderate' | 'good';
-  };
 }
 
-const getCropRecommendations = (soil?: InsightsPanelProps['soilProfile']): string[] => {
-  if (!soil) return [];
-  const crops = new Set<string>();
-
-  const type = soil.type.toLowerCase();
-  const drainage = soil.drainage;
-  const ph = soil.ph;
-
-  // Soil type based rules
-  if (type.includes('clay')) {
-    crops.add('rice');
-    crops.add('sugarcane');
-  }
-  if (type.includes('loam')) {
-    crops.add('wheat');
-    crops.add('maize');
-    crops.add('sugarcane');
-  }
-  if (type.includes('sandy')) {
-    crops.add('maize');
-    crops.add('wheat');
-  }
-
-  // Drainage adjustments
-  if (drainage === 'poor') {
-    crops.add('rice');
-    // Penalize maize in poor drainage
-    crops.delete('maize');
-  }
-  if (drainage === 'good') {
-    crops.add('maize');
-    crops.add('wheat');
-  }
-
-  // pH constraints (typical suitability ranges)
-  if (ph < 5.5) {
-    // Very acidic: favor rice, avoid wheat
-    crops.add('rice');
-    crops.delete('wheat');
-  } else if (ph >= 5.5 && ph <= 7.5) {
-    // Neutral to slightly acidic: most crops okay
-    // keep as is
-  } else if (ph > 7.5) {
-    // Alkaline: prefer maize, avoid rice if too high
-    crops.add('maize');
-    crops.delete('rice');
-  }
-
-  // Ensure deterministic ordering
-  return Array.from(crops).sort((a, b) => a.localeCompare(b));
-};
-
-const InsightsPanel = ({ hasData, soilProfile }: InsightsPanelProps) => {
+const InsightsPanel = ({ hasData }: InsightsPanelProps) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { t } = useI18n();
 
@@ -102,50 +44,6 @@ const InsightsPanel = ({ hasData, soilProfile }: InsightsPanelProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Soil Profile & Crop Suggestions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Droplets className="h-5 w-5 text-water" />
-            <span>Soil Profile & Crop Suggestions</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {soilProfile ? (
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div className="text-muted-foreground">Soil Type</div>
-                <div className="font-medium">{soilProfile.type}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Drainage</div>
-                <div className="font-medium capitalize">{soilProfile.drainage}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">pH</div>
-                <div className="font-medium">{soilProfile.ph}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Organic Matter</div>
-                <div className="font-medium">{soilProfile.organicMatterPct}%</div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">Soil data will appear after generating a forecast.</div>
-          )}
-
-          {soilProfile && (
-            <div className="pt-3 border-t">
-              <div className="text-sm font-medium mb-2">Recommended Crops</div>
-              <div className="flex flex-wrap gap-2">
-                {getCropRecommendations(soilProfile).map((crop) => (
-                  <Badge key={crop} variant="outline">{crop}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
       {/* NDVI Satellite Data */}
       <Card>
         <CardHeader>
