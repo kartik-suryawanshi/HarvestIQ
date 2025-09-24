@@ -195,4 +195,4 @@ This project is provided as-is for hackathon/demonstration purposes. Add your de
 
 - Weather data via `weatherapi.com`
 - UI components via Shadcn UI
-- Geospatial boundaries via GADM (optional utility)
+
