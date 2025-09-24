@@ -35,11 +35,24 @@ const DashboardCards = ({ forecastData, scenario, weeklyForecast }: DashboardCar
   const handleDownloadPDF = async () => {
     const input = dashboardRef.current;
     if (input) {
-      const { default: html2pdf } = await import('html2pdf.js');
+      // Try browser bundle first for better compatibility with Vite
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - module has no types
+      let html2pdf: any;
+      try {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - module has no types
+        const mod = await import('html2pdf.js/dist/html2pdf.bundle.min.js');
+        html2pdf = (mod as any).default ?? mod;
+      } catch {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - module has no types
+        const mod = await import('html2pdf.js');
+        html2pdf = (mod as any).default ?? mod;
+      }
       html2pdf().from(input).save(`HarvestIQ_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     }
   };
-
   if (!forecastData) {
     return (
       <div className="flex flex-col gap-6">

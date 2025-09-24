@@ -12,8 +12,7 @@ import { mockApiCall, ForecastData } from '@/lib/mockData';
 import { Save, History } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 
-const WEATHER_API_KEY = '903fb6f8bda543aebc491957252409'; // Replace with your actual WeatherAPI.com key
-const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
+// Weather config is read from environment via Vite.
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -29,28 +28,39 @@ const Dashboard = () => {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]); // New state for 7-day forecast
+  // Soil state (user-provided)
+  const [soilType, setSoilType] = useState('');
+  const [soilPh, setSoilPh] = useState('');
+  const [soilOrganicMatter, setSoilOrganicMatter] = useState('');
+  const [soilDrainage, setSoilDrainage] = useState<'' | 'poor' | 'moderate' | 'good'>('');
 
-  // Fetch 7-day forecast when selectedDistrict changes
+  // Weekly forecast (optional external API)
+  const WEATHER_API_BASE_URL = (import.meta as any).env?.VITE_WEATHER_API_BASE_URL;
+  const WEATHER_API_KEY = (import.meta as any).env?.VITE_WEATHER_API_KEY;
+  const [weeklyForecastData, setWeeklyForecastData] = useState<any[]>([]);
+
   useEffect(() => {
-    if (selectedDistrict) {
-      setIsLoading(true); // Set loading to true before fetching
-      fetchWeeklyForecast(selectedDistrict);
-    } else {
+    if (!selectedDistrict) {
       setWeeklyForecastData([]);
+      return;
+    }
+    // Only attempt fetch if API config provided
+    if (WEATHER_API_BASE_URL && WEATHER_API_KEY) {
+      setIsLoading(true);
+      fetchWeeklyForecast(selectedDistrict);
     }
   }, [selectedDistrict]);
 
   const fetchWeeklyForecast = async (district: string) => {
     try {
       const response = await fetch(
-        `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${district}&days=7`
+        `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(district)}&days=7`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const data = await response.json();
-      const formattedForecast = data.forecast.forecastday.map((day: any) => ({
+      const formattedForecast = (data?.forecast?.forecastday || []).map((day: any) => ({
         day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
         temp: day.day.avgtemp_c,
         rain: day.day.totalprecip_mm,
@@ -67,7 +77,7 @@ const Dashboard = () => {
       });
       setWeeklyForecastData([]);
     } finally {
-      setIsLoading(false); // Set loading to false after fetch attempt
+      setIsLoading(false);
     }
   };
 
@@ -202,6 +212,14 @@ const Dashboard = () => {
               onCropChange={setSelectedCrop}
               onSeasonChange={setSelectedSeason}
               onGenerateForecast={handleGenerateForecast}
+              soilType={soilType}
+              soilPh={soilPh}
+              soilOrganicMatter={soilOrganicMatter}
+              soilDrainage={soilDrainage}
+              onSoilTypeChange={setSoilType}
+              onSoilPhChange={setSoilPh}
+              onSoilOrganicMatterChange={setSoilOrganicMatter}
+              onSoilDrainageChange={(v) => setSoilDrainage(v)}
             />
           </div>
     
@@ -247,7 +265,7 @@ const Dashboard = () => {
               <PredictionHistory />
             ) : (
               <DashboardCards 
-                forecastData={forecastData} 
+                forecastData={forecastData}
                 scenario={scenario}
                 weeklyForecast={weeklyForecastData} // Pass weekly forecast data
               />
@@ -263,7 +281,19 @@ const Dashboard = () => {
               </p>
             </div>
             
-            <InsightsPanel hasData={!!forecastData} />
+            <InsightsPanel
+              hasData={!!forecastData}
+              soilProfile={
+                soilType && soilDrainage && soilPh
+                  ? {
+                      type: soilType,
+                      ph: parseFloat(soilPh) || (forecastData?.soilProfile?.ph ?? 6.5),
+                      organicMatterPct: parseFloat(soilOrganicMatter) || (forecastData?.soilProfile?.organicMatterPct ?? 1.5),
+                      drainage: soilDrainage,
+                    }
+                  : forecastData?.soilProfile
+              }
+            />
           </div>
         </div>
       </main>
